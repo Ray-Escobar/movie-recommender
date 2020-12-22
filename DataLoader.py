@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 from CsvProvider import CsvProvider
 from DataPathProvider import DataPathProvider
@@ -20,31 +20,39 @@ class DataLoader:
         self.movies_data = None
         self.predictions_data = None
         self.ratings_data = None
+
         self.ratings_matrix = None
+        self.user_id_to_ratings_matrix_row = None
+        self.movie_id_to_ratings_matrix_column = None
+
         self.ratings_matrix_user_column = None
         self.ratings_matrix_movie_column = None
         self.ratings_map= None
         self.users_data = None
 
-    def load_data(self, path: str, column_names: List[str]) -> pd.DataFrame:
+    def __load_data(self, path: str, column_names: List[str]) -> pd.DataFrame:
         return self.csv_provider.read_csv(path, delimiter=';', column_names = column_names)
 
-    def get_data(self, data: pd.DataFrame, path: str, column_names: List[str]) -> pd.DataFrame:
+    def __get_data(self, data: pd.DataFrame, path: str, column_names: List[str]) -> pd.DataFrame:
         if data is None:
-            data = self.load_data(path, column_names=column_names)
+            data = self.__load_data(path, column_names=column_names)
 
         return data.copy()
 
     def get_movies_data(self) -> pd.DataFrame:
-        return self.get_data(self.movies_data, self.data_path_provider.get_movies_path(), ['movieID', 'year', 'movie'])
+        return self.__get_data(self.movies_data, self.data_path_provider.get_movies_path(), ['movieID', 'year', 'movie'])
 
     def get_predictions_data(self) -> pd.DataFrame:
-        return self.get_data(self.predictions_data, self.data_path_provider.get_predictions_path(), ['userID', 'movieID'])
+        return self.__get_data(self.predictions_data, self.data_path_provider.get_predictions_path(), ['userID', 'movieID'])
+
+    def get_prediction_instances(self)-> List[Tuple[int, int]]:
+        prediction_data = self.get_predictions_data()
+        return list(zip(prediction_data['userID'].tolist(), prediction_data['movieID'].tolist()))
 
     def get_ratings_data(self) -> pd.DataFrame:
-        return self.get_data(self.ratings_data, self.data_path_provider.get_ratings_path(), ['userID', 'movieID', 'rating'])
+        return self.__get_data(self.ratings_data, self.data_path_provider.get_ratings_path(), ['userID', 'movieID', 'rating'])
 
-    def get_rating_matrix_user_and_column_data(self) -> (List[int], List[int]):
+    def get_rating_matrix_user_and_movie_data(self) -> (List[int], List[int]):
         if self.ratings_matrix_user_column is not None and self.ratings_matrix_movie_column is not None:
             return self.ratings_matrix_user_column, self.ratings_matrix_movie_column
 
@@ -60,6 +68,29 @@ class DataLoader:
 
         return self.ratings_matrix_user_column, self.ratings_matrix_movie_column
 
+    def get_rating_matrix_user_and_movie_index_translation_dict(self) -> (dict, dict):
+        """
+        Returns a tuple of dictionaries that can be used to translate user ids to rows inside the rating matrix
+        and movie ids to columns inside the rating matrix.
+
+        :return: a tuple of the 2 described dictionaries, the first for users, the second for movies
+        """
+        if self.user_id_to_ratings_matrix_row is not None and self.movie_id_to_ratings_matrix_column is not None:
+            return self.user_id_to_ratings_matrix_row, self.movie_id_to_ratings_matrix_column
+
+        user_data, movie_data = self.get_rating_matrix_user_and_movie_data()
+
+        self.user_id_to_ratings_matrix_row = dict()
+        self.movie_id_to_ratings_matrix_column = dict()
+
+        for row, user_id in enumerate(user_data):
+            self.user_id_to_ratings_matrix_row[user_id] = row
+
+        for col, movie_id in enumerate(movie_data):
+            self.movie_id_to_ratings_matrix_column[movie_id] = col
+
+        return self.user_id_to_ratings_matrix_row, self.movie_id_to_ratings_matrix_column
+
 
 
     def get_ratings_map(self) -> dict:
@@ -69,12 +100,8 @@ class DataLoader:
         """
 
 
-
         if self.ratings_map is not None:
             return self.ratings_map
-
-
-        user_column_unique, movie_column_unique = self.get_rating_matrix_user_and_column_data()
 
 
         ratings_data: pd.DataFrame = self.get_ratings_data()
@@ -99,13 +126,11 @@ class DataLoader:
 
 
 
-    def get_ratings_matrix(self) -> (np.array, List[int], List[int]):
+    def get_ratings_matrix(self) -> (np.array, dict, dict):
         """
         Returns a matrix, with rows being represented by users, and the columns by the movies. The entries of the matrix will be the ratings.
-        In addition to that, 2 lists, one of user ids, and one of movie ids will be returned as well, to get the id corresponding to a specific row / colums.
-        Behind the scenes, the functions applies a kind of hash join.
 
-        :return: a tuple consisting of the ratings matrix, the user ids list and the movie ids list
+        :return: a tuple consisting of the ratings matrix
         """
 
         # create the actual ratings matrix
@@ -114,7 +139,7 @@ class DataLoader:
             return self.ratings_matrix
 
         hash_table = self.get_ratings_map()
-        user_column_unique, movie_column_unique = self.get_rating_matrix_user_and_column_data()
+        user_column_unique, movie_column_unique = self.get_rating_matrix_user_and_movie_data()
 
 
         ratings_matrix:np.array= np.array(len(user_column_unique) * [len(movie_column_unique) * [0]]) # initialize a matrix of the right size, with 0 (symbol for unrated movies)
@@ -125,13 +150,14 @@ class DataLoader:
                     ratings_matrix[row][column] = hash_table[(user_id, movie_id)]
 
 
+
         self.ratings_matrix = ratings_matrix
 
         return self.ratings_matrix
 
 
     def get_users_data(self) -> pd.DataFrame:
-        return self.get_data(self.users_data, self.data_path_provider.get_users_path(), ['userID', 'gender', 'age', 'profession'])
+        return self.__get_data(self.users_data, self.data_path_provider.get_users_path(), ['userID', 'gender', 'age', 'profession'])
 
 
 

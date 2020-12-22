@@ -5,7 +5,10 @@ from random import randint
 # -*- coding: utf-8 -*-
 from DataLoader import DataLoader
 from DataPathProvider import DataPathProvider
+from FormulaFactory import SimilarityMeasureType, FormulaFactory
 from LocalFileCsvProvider import LocalFileCsvProvider
+from NaiveUserCollaborativeFiltering import NaiveUserCollaborativeFiltering
+from PredictionStrategy import PredictionStrategy
 
 """
 FRAMEWORK FOR DATAMINING CLASS
@@ -49,15 +52,19 @@ data_loader = DataLoader(data_path_provider=data_path_provider, csv_provider=Loc
 
 
 
-movies_data = data_loader.get_movies_data()
-users_data = data_loader.get_users_data()
-ratings_data = data_loader.get_ratings_data()
-predictions_data = data_loader.get_predictions_data()
-ratings_matrix = data_loader.get_ratings_matrix()
-ratings_table = data_loader.get_ratings_map()
+# movies_data = data_loader.get_movies_data()
+# users_data = data_loader.get_users_data()
+# ratings_data = data_loader.get_ratings_data()
+# predictions_data = data_loader.get_predictions_data()
+# ratings_matrix = data_loader.get_ratings_matrix()
+# ratings_table = data_loader.get_ratings_map()
+#
+# print(data_loader.get_prediction_instances())
 
-print(ratings_matrix)
-print(data_loader.get_ratings_matrix())
+formula_factory = FormulaFactory()
+prediction_strategy: PredictionStrategy = NaiveUserCollaborativeFiltering(3, SimilarityMeasureType.MEANLESS_COSINE_SIMILARITY, formula_factory)
+prediction_strategy.add_data_loader(data_loader)
+print(prediction_strategy.predict())
 
 
 
