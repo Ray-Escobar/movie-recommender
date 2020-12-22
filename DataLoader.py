@@ -142,7 +142,7 @@ class DataLoader:
         user_column_unique, movie_column_unique = self.get_rating_matrix_user_and_movie_data()
 
 
-        ratings_matrix:np.array= np.array(len(user_column_unique) * [len(movie_column_unique) * [0]]) # initialize a matrix of the right size, with 0 (symbol for unrated movies)
+        ratings_matrix:np.array= np.array(len(user_column_unique) * [len(movie_column_unique) * [0.0]]) # initialize a matrix of the right size, with 0 (symbol for unrated movies)
 
         for row, user_id in enumerate(user_column_unique):
             for column, movie_id in enumerate(movie_column_unique):

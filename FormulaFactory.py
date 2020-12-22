@@ -24,7 +24,7 @@ class FormulaFactory:
 
         :return: a function that performs the described action.
         """
-        return lambda vec_x, vec_y: np.divide(np.dot(vec_x, vec_y), (np.linalg.norm(vec_x) * np.linalg.norm(vec_y)))
+        return lambda vec_x, vec_y: np.dot(vec_x, vec_y) / (np.linalg.norm(vec_x) * np.linalg.norm(vec_y))
 
     def create_meanless_cosine_similarity_measure(self):
         """
@@ -32,7 +32,20 @@ class FormulaFactory:
 
         :return: a function the performs the described action.
         """
-        make_meanless = lambda vec: vec - np.average(vec)
+        def make_meanless(vec: np.array):
+            non_zero_elements = [x for x in vec.tolist() if x != 0]
+            mean = sum(non_zero_elements) / len(non_zero_elements)
+
+            meanless_vec = []
+
+            for e in vec.tolist():
+                if e == 0:
+                    meanless_vec.append(0)
+                else:
+                    meanless_vec.append(e - mean)
+            return np.array(meanless_vec)
+
+
         cosine_similarity = self.create_cosine_similarity_measure()
 
         return lambda vec_x, vec_y: cosine_similarity(make_meanless(vec_x), make_meanless(vec_y))

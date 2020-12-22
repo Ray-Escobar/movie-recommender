@@ -16,6 +16,7 @@ class NaiveUserCollaborativeFiltering(PredictionStrategy):
 
 
 
+
     def add_data_loader(self, data_loader: DataLoader):
         PredictionStrategy.add_data_loader(self, data_loader)
 
@@ -31,6 +32,8 @@ class NaiveUserCollaborativeFiltering(PredictionStrategy):
 
         # compute the similarity matrix
         self.similarity_matrix = self.__compute_similarity_matrix()
+
+
 
 
     def predict(self) -> dict:
@@ -77,7 +80,7 @@ class NaiveUserCollaborativeFiltering(PredictionStrategy):
         num_users = self.ratings_matrix.shape[0]
 
         # the simialrity matrix initializes as a num_users x num_users matrix filled with zeros
-        similarity_matrix = np.array(num_users * [num_users * [0]])
+        similarity_matrix = np.array(num_users * [num_users * [0.0]])
 
         # compute the similarity between all possible user combinations
         for user1_index in range(num_users):
@@ -86,6 +89,7 @@ class NaiveUserCollaborativeFiltering(PredictionStrategy):
                 user2_ratings = self.ratings_matrix[user2_index, :]
 
                 similarity = self.similarity_measure(user1_ratings, user2_ratings)
+
 
                 similarity_matrix[user1_index, user2_index] = similarity
 
@@ -102,6 +106,10 @@ class NaiveUserCollaborativeFiltering(PredictionStrategy):
         """
         most_similar_neighbors = self.__find_k_most_similar_neighbors_with_rated_movie(target_user_index, target_movie_index)
 
+        # if no most similar neighbors were found, return 0 (i.e. the rating cannot be predicted)
+        if len(most_similar_neighbors) == 0:
+            return 0.0
+
         # get the list of similarity-rating tuples for the retrieved neighbors
         sim_rating_tuples = []
 
@@ -110,7 +118,6 @@ class NaiveUserCollaborativeFiltering(PredictionStrategy):
 
         # return the similarity weighted average of the ratings
         sim_avg = self.fomula_factory.create_rating_average_weighted_by_similarity_function()
-
         return sim_avg(sim_rating_tuples)
 
 
@@ -133,9 +140,11 @@ class NaiveUserCollaborativeFiltering(PredictionStrategy):
             if user_index == target_user_index:
                 continue
 
+
             # we need to skip the users that don't have a rating for the target
-            if self.__user_has_rating_for_movie(target_user_index, target_movie_index) is False:
+            if self.__user_has_rating_for_movie(user_index, target_movie_index) is False:
                 continue
+
 
             sim = self.similarity_matrix[target_user_index][user_index]
 
@@ -151,7 +160,7 @@ class NaiveUserCollaborativeFiltering(PredictionStrategy):
 
 
 
-    def __user_has_rating_for_movie(self, user_index: int, movie_index: int):
+    def __user_has_rating_for_movie(self, user_index: int, movie_index: int) -> bool:
         """
         Returns true if the provided user has rated the provided movie.
 
@@ -160,7 +169,9 @@ class NaiveUserCollaborativeFiltering(PredictionStrategy):
 
         :return: true, if the movie has a rating, false otherwise
         """
+        if np.abs(self.ratings_matrix[user_index][movie_index]) < 0.01:
+            return False
 
-        return self.ratings_matrix[user_index][movie_index] != 0
+        return True
 
 
