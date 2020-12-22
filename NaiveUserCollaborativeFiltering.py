@@ -10,11 +10,8 @@ import heapq
 class NaiveUserCollaborativeFiltering(PredictionStrategy):
     def __init__(self, k_neighbors: int, similarity_measure_type: SimilarityMeasureType, formula_factory: FormulaFactory):
         self.k_neighbors: int = k_neighbors
-        self.fomula_factory = formula_factory
-        self.similarity_measure = self.fomula_factory.create_similarity_measure(similarity_measure_type)
-
-
-
+        self.formula_factory = formula_factory
+        self.similarity_measure = self.formula_factory.create_similarity_measure(similarity_measure_type)
 
 
     def add_data_loader(self, data_loader: DataLoader):
@@ -117,7 +114,7 @@ class NaiveUserCollaborativeFiltering(PredictionStrategy):
             sim_rating_tuples.append((sim, self.ratings_matrix[user_index, target_movie_index]))
 
         # return the similarity weighted average of the ratings
-        sim_avg = self.fomula_factory.create_rating_average_weighted_by_similarity_function()
+        sim_avg = self.formula_factory.create_rating_average_weighted_by_similarity_function()
         return sim_avg(sim_rating_tuples)
 
 
