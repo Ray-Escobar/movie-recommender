@@ -37,7 +37,7 @@ class TestCosineLshUserCollaborativeFiltering(unittest.TestCase):
         data_loader.get_rating_matrix_user_and_movie_index_translation_dict = Mock(return_value = (self.user_id_to_row, self.movie_id_to_col))
         data_loader.get_ratings_matrix = Mock(return_value = self.rating_matrix)
 
-        prediction_strategy: PredictionStrategy = CosineLshUserCollaborativeFiltering(2, 8, 3, FormulaFactory())
+        prediction_strategy: PredictionStrategy = CosineLshUserCollaborativeFiltering(2, 8, 16, FormulaFactory())
 
 
         prediction_strategy.add_data_loader(data_loader)

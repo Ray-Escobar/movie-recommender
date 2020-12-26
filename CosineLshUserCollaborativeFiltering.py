@@ -80,15 +80,19 @@ class CosineLshUserCollaborativeFiltering(PredictionStrategy):
                                                             self.max_query_distance)
 
         # get the sim-user tuples list
-        sim_user_tuple_list = self.__get_similarity_user_tuples_from_ids(target_user, neighbour_user_ids)
+        sim_user_tuple_list = self.__get_similarity_rating_tuples_from_ids(target_movie_id, target_user, neighbour_user_ids)
 
         # compute the prediction for the rating as a weighted average of the neighbor user ratings
         sim_weight_avg = self.formula_factory.create_rating_average_weighted_by_similarity_function()
+        print(sim_user_tuple_list)
+        rating = sim_weight_avg(sim_user_tuple_list)
 
-        return sim_weight_avg(sim_user_tuple_list)
+        print(rating)
 
-    def __get_similarity_user_tuples_from_ids(self, target_user: np.array, neighbour_user_ids: List[int]) -> List[
-        Tuple[float, np.array]]:
+        return rating
+
+    def __get_similarity_rating_tuples_from_ids(self, target_movie_id, target_user: np.array, neighbour_user_ids: List[int]) -> List[
+        Tuple[float, float]]:
         """
         Computes the similarities between the target_user and the users corresponding the the provided user ids.
 
@@ -102,12 +106,13 @@ class CosineLshUserCollaborativeFiltering(PredictionStrategy):
 
         for user_id in neighbour_user_ids:
             user_row = self.user_id_to_row_dict[user_id]
+            movie_col = self.movie_id_to_col_dict[target_movie_id]
             neighbor_user = self.ratings_matrix[user_row]
 
             # compute the meanless cosine similarity between target_user and the neighbor_user
             similarity_value = meanless_cosine_sim(target_user, neighbor_user)
 
-            similarity_user_tuples.append((similarity_value, neighbor_user))
+            similarity_user_tuples.append((similarity_value, neighbor_user[movie_col]))
 
         return similarity_user_tuples
 
@@ -175,7 +180,7 @@ class LSH:
 
             # add only the neighbors that contain ratings for the target movie
             for nearby_neighbor in nearby_neighbors:
-                if self.user_rated_target_movie(nearby_neighbor, target_movie_id):
+                if self.__user_rated_target_movie(nearby_neighbor, target_movie_id):
                     neighbors.append(nearby_neighbor)
 
                 # if the maximum number of neighbors has been reached, stop adding neighbors
@@ -187,7 +192,7 @@ class LSH:
 
         return neighbors
 
-    def user_rated_target_movie(self, user_id: int, target_movie_id: int) -> bool:
+    def __user_rated_target_movie(self, user_id: int, target_movie_id: int) -> bool:
         """
         Returns true if the user has rated the target movie, false otherwise.
 
@@ -196,12 +201,18 @@ class LSH:
 
         :return: true, if the provided user has rated the provided movie, false otherwise
         """
+
         user_row = self.user_id_to_row_dict[user_id]
         user = self.ratings_matrix[user_row, :]
 
         movie_col = self.movie_id_to_column_dict[target_movie_id]
 
-        return user[movie_col] is not 0
+
+
+        if np.abs(user[movie_col]) < 0.01:
+            return False
+
+        return True
 
     def __generate_locality_sensitive_hash_table(self, planes: List[np.array]) -> dict:
         """
