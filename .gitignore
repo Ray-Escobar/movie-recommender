@@ -151,4 +151,5 @@ crashlytics-build.properties
 fabric.properties
 
 # the used data
-data/
+data/*
+persistence/*

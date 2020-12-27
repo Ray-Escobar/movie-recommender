@@ -16,7 +16,19 @@ class FormulaFactory:
 
         :return: a function that performs the described action
         """
-        return lambda similarity_rating_tuples: sum([sim * rating for sim, rating in similarity_rating_tuples]) / sum([sim for sim, _ in similarity_rating_tuples])
+
+        def compute_weighted_average(tuples):
+            weights, ratings = list(zip(*tuples))
+
+
+            sm = np.sum(weights)
+
+            if sm == 0:
+                return 0.0
+
+            return np.average(ratings, weights=weights)
+
+        return lambda similarity_rating_tuples: compute_weighted_average(similarity_rating_tuples)
 
     def create_cosine_similarity_measure(self):
         """
@@ -33,17 +45,14 @@ class FormulaFactory:
         :return: a function the performs the described action.
         """
         def make_meanless(vec: np.array):
-            non_zero_elements = [x for x in vec.tolist() if x != 0]
-            mean = sum(non_zero_elements) / len(non_zero_elements)
+            non_zero_elements = vec[vec != 0]
+            mean = np.mean(non_zero_elements)
 
-            meanless_vec = []
+            sub_mean = np.vectorize(lambda x: 0 if x == 0 else x - mean)
 
-            for e in vec.tolist():
-                if e == 0:
-                    meanless_vec.append(0)
-                else:
-                    meanless_vec.append(e - mean)
-            return np.array(meanless_vec)
+            return sub_mean(vec)
+
+
 
 
         cosine_similarity = self.create_cosine_similarity_measure()

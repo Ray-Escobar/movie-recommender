@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import Mock
 
 from CosineLshUserCollaborativeFiltering import CosineLshUserCollaborativeFiltering
+from DiskPersistor import DiskPersistor
 from FormulaFactory import SimilarityMeasureType, FormulaFactory
 
 
@@ -37,17 +38,23 @@ class TestCosineLshUserCollaborativeFiltering(unittest.TestCase):
         data_loader.get_rating_matrix_user_and_movie_index_translation_dict = Mock(return_value = (self.user_id_to_row, self.movie_id_to_col))
         data_loader.get_ratings_matrix = Mock(return_value = self.rating_matrix)
 
-        prediction_strategy: PredictionStrategy = CosineLshUserCollaborativeFiltering(2, 8, 16, FormulaFactory())
+        prediction_strategy: PredictionStrategy = CosineLshUserCollaborativeFiltering(4, 32, 64, FormulaFactory(), random_seed=3)
+
+        fact = FormulaFactory()
+        avg = fact.create_rating_average_weighted_by_similarity_function()
 
 
         prediction_strategy.add_data_loader(data_loader)
+        prediction_strategy.add_disk_persistor(disk_persistor=DiskPersistor(), persistence_id='test_id', force_update=False)
+
+        prediction_strategy.perform_precomputations()
 
         expected_prediction = {
             (1, 1): 3.01,
             (2, 1): 4.59,
-            (2, 2): 3.88,
+            (2, 2): 3.91,
             (2, 8): 1.4,
-            (4, 5): 3.55
+            (4, 5): 2.618
         }
 
         actual_prediction = prediction_strategy.predict()

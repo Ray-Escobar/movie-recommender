@@ -56,9 +56,12 @@ class DataLoader:
         if self.ratings_matrix_user_column is not None and self.ratings_matrix_movie_column is not None:
             return self.ratings_matrix_user_column, self.ratings_matrix_movie_column
 
-        ratings_data: pd.DataFrame = self.get_ratings_data()
-        user_column: List[int] = ratings_data['userID'].tolist()
-        movie_column: List[int] = ratings_data['movieID'].tolist()
+        users_data: pd.DataFrame = self.get_users_data()
+        movie_data: pd.DataFrame = self.get_movies_data()
+
+
+        user_column: List[int] = users_data['userID'].tolist()
+        movie_column: List[int] = movie_data['movieID'].tolist()
 
         # get a sorted list of all unique user ids
         self.ratings_matrix_user_column = sorted(list(set(user_column)))

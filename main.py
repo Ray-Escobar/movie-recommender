@@ -3,8 +3,10 @@ import pandas as pd
 from random import randint
 
 # -*- coding: utf-8 -*-
+from CosineLshUserCollaborativeFiltering import CosineLshUserCollaborativeFiltering
 from DataLoader import DataLoader
 from DataPathProvider import DataPathProvider
+from DiskPersistor import DiskPersistor
 from FormulaFactory import SimilarityMeasureType, FormulaFactory
 from LocalFileCsvProvider import LocalFileCsvProvider
 from NaiveUserCollaborativeFiltering import NaiveUserCollaborativeFiltering
@@ -56,14 +58,16 @@ data_loader = DataLoader(data_path_provider=data_path_provider, csv_provider=Loc
 # users_data = data_loader.get_users_data()
 # ratings_data = data_loader.get_ratings_data()
 # predictions_data = data_loader.get_predictions_data()
-# ratings_matrix = data_loader.get_ratings_matrix()
 # ratings_table = data_loader.get_ratings_map()
 #
-# print(data_loader.get_prediction_instances())
+#print(ratings_matrix)
 
 formula_factory = FormulaFactory()
 prediction_strategy: PredictionStrategy = NaiveUserCollaborativeFiltering(3, SimilarityMeasureType.MEANLESS_COSINE_SIMILARITY, formula_factory)
+prediction_strategy: PredictionStrategy = CosineLshUserCollaborativeFiltering(5, 6, 1, formula_factory, 3)
 prediction_strategy.add_data_loader(data_loader)
+prediction_strategy.add_disk_persistor(disk_persistor=DiskPersistor(), persistence_id='lsh', force_update=True)
+prediction_strategy.perform_precomputations()
 print(prediction_strategy.predict())
 
 

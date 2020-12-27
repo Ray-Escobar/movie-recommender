@@ -13,28 +13,54 @@ class CosineLshUserCollaborativeFiltering(PredictionStrategy):
     """
 
     def __init__(self, k_neighbors: int, signiture_length: int, max_query_distance: int,
-                 formula_factory: FormulaFactory):
+                 formula_factory: FormulaFactory, random_seed: int):
         """
         Initializes the strategy with the provided parameters.
         :param k_neighbors: the number of neighbors to be used in collaborative filtering
         """
+
+        np.random.seed(random_seed)
 
         self.k_neighbors = k_neighbors
         self.formula_factory = formula_factory
         self.signiture_length = signiture_length
         self.max_query_distance = max_query_distance
 
-    def add_data_loader(self, data_loader: DataLoader):
-        PredictionStrategy.add_data_loader(self, data_loader)
+        self.meanless_cosine_sim = self.formula_factory.create_meanless_cosine_similarity_measure()
+        self.sim_weight_avg = self.formula_factory.create_rating_average_weighted_by_similarity_function()
+
+
+
+
+
+    def perform_precomputations(self):
+        PredictionStrategy.perform_precomputations(self)
 
         self.ratings_matrix = self.data_loader.get_ratings_matrix()
         self.user_id_vector, self.movie_id_vector = self.data_loader.get_rating_matrix_user_and_movie_data()
         self.user_id_to_row_dict, self.movie_id_to_col_dict = self.data_loader.get_rating_matrix_user_and_movie_index_translation_dict()
 
-        self.lsh_table = LSH(self.ratings_matrix,
-                             self.user_id_vector, self.movie_id_vector,
-                             self.user_id_to_row_dict, self.movie_id_to_col_dict,
-                             self.signiture_length)
+        self.lsh_table = None
+
+        if self.disk_persistor is None:
+
+            self.lsh_table = LSH(self.ratings_matrix,
+                                self.user_id_vector, self.movie_id_vector,
+                                self.user_id_to_row_dict, self.movie_id_to_col_dict,
+                                self.signiture_length)
+
+        else:
+            results = self.disk_persistor.perist_computation(
+                computations=[(lambda: LSH(self.ratings_matrix,
+                                self.user_id_vector, self.movie_id_vector,
+                                self.user_id_to_row_dict, self.movie_id_to_col_dict,
+                                self.signiture_length), self.persistence_id)],
+                force_update=self.force_update
+            )
+
+            self.lsh_table = results[0]
+
+
 
     def predict(self):
         """
@@ -55,11 +81,21 @@ class CosineLshUserCollaborativeFiltering(PredictionStrategy):
 
         predictions = dict()
 
+        print("Starting predictions...")
+
+        predictions_num = len(instances_to_be_predicted)
+        num_prediction = 0
+
         for user_id, movie_id in instances_to_be_predicted:
+
+            num_prediction += 1
+            print('Progress {} / {}'.format(num_prediction, predictions_num))
 
             rating = self.__predict_rating_for(user_id, movie_id)
 
             predictions[(user_id, movie_id)] = rating
+
+        print("Finished predictions!")
 
         return predictions
 
@@ -79,16 +115,27 @@ class CosineLshUserCollaborativeFiltering(PredictionStrategy):
         neighbour_user_ids = self.lsh_table.query_neighbors(target_user, self.k_neighbors, target_movie_id,
                                                             self.max_query_distance)
 
+
+        # if no neighbors can be found, avoid making a prediction (return 0)
+        if len(neighbour_user_ids) == 0:
+            return 0.0
+
         # get the sim-user tuples list
         sim_user_tuple_list = self.__get_similarity_rating_tuples_from_ids(target_movie_id, target_user, neighbour_user_ids)
 
         # compute the prediction for the rating as a weighted average of the neighbor user ratings
-        sim_weight_avg = self.formula_factory.create_rating_average_weighted_by_similarity_function()
-        print(sim_user_tuple_list)
-        rating = sim_weight_avg(sim_user_tuple_list)
 
-        print(rating)
+        rating = self.sim_weight_avg(sim_user_tuple_list)
 
+        if np.abs(rating) < 0.01:
+            return 0
+
+
+        # deal with ratings outside the range
+        if rating < 1:
+            rating = 1.0
+        elif rating > 5:
+            rating = 5.0
         return rating
 
     def __get_similarity_rating_tuples_from_ids(self, target_movie_id, target_user: np.array, neighbour_user_ids: List[int]) -> List[
@@ -102,7 +149,6 @@ class CosineLshUserCollaborativeFiltering(PredictionStrategy):
         """
         similarity_user_tuples: List[Tuple[float, np.array]] = list()
 
-        meanless_cosine_sim = self.formula_factory.create_meanless_cosine_similarity_measure()
 
         for user_id in neighbour_user_ids:
             user_row = self.user_id_to_row_dict[user_id]
@@ -110,7 +156,8 @@ class CosineLshUserCollaborativeFiltering(PredictionStrategy):
             neighbor_user = self.ratings_matrix[user_row]
 
             # compute the meanless cosine similarity between target_user and the neighbor_user
-            similarity_value = meanless_cosine_sim(target_user, neighbor_user)
+            similarity_value = self.meanless_cosine_sim(target_user, neighbor_user)
+
 
             similarity_user_tuples.append((similarity_value, neighbor_user[movie_col]))
 
@@ -147,7 +194,7 @@ class LSH:
         # generate the planes used in the locality sensitive hashing
         num_users: int = self.ratings_matrix.shape[0]
         num_movies: int = self.ratings_matrix.shape[1]
-        self.planes = self.__generate_k_random_planes(k=num_users, dim=num_movies)
+        self.planes = self.__generate_k_random_planes(k=self.signiture_length, dim=num_movies)
 
         self.lsh_map: dict = self.__generate_locality_sensitive_hash_table(self.planes)
 
@@ -221,11 +268,15 @@ class LSH:
         :return: a dictionary as described above
         """
 
+        print("Generating cosine lsh signatures...")
+
         num_users: int = self.ratings_matrix.shape[0]
 
         bins: dict = dict()
 
         for user_row in range(num_users):
+            print('Progress ' + str(user_row + 1) + " / " + str(num_users))
+
             user: np.array = self.ratings_matrix[user_row, :]
 
             user_signiture: int = self.__generate_signiture(user, planes)
@@ -234,6 +285,8 @@ class LSH:
                 bins[user_signiture] = list()
 
             bins[user_signiture].append(self.user_id_vector[user_row])
+
+        print("Finished generating signatures.")
 
         return bins
 
@@ -247,9 +300,11 @@ class LSH:
 
         planes = []
 
+
         for _ in range(k):
             plane = np.random.randn(dim)
             planes.append(plane)
+
 
         return planes
 
@@ -265,10 +320,12 @@ class LSH:
 
         signiture = 0
 
+
         for plane in planes:
             signiture = signiture << 1
 
             if np.dot(user, plane) > 0:
                 signiture |= 1
+
 
         return signiture
