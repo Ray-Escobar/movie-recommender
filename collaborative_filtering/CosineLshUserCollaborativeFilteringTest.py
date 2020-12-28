@@ -1,14 +1,13 @@
 import unittest
 from unittest.mock import Mock
 
-from CosineLshUserCollaborativeFiltering import CosineLshUserCollaborativeFiltering
-from DiskPersistor import DiskPersistor
-from FormulaFactory import SimilarityMeasureType, FormulaFactory
+from collaborative_filtering.CosineLshUserCollaborativeFiltering import CosineLshUserCollaborativeFiltering
+from data_handling.DiskPersistor import DiskPersistor
+from FormulaFactory import FormulaFactory
 
 
 import numpy as np
 
-from NaiveUserCollaborativeFiltering import NaiveUserCollaborativeFiltering
 from PredictionStrategy import PredictionStrategy
 
 

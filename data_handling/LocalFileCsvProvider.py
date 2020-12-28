@@ -1,6 +1,6 @@
 from typing import List
 
-from CsvProvider import CsvProvider
+from data_handling.CsvProvider import CsvProvider
 import pandas as pd
 
 class LocalFileCsvProvider(CsvProvider):

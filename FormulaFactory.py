@@ -45,10 +45,11 @@ class FormulaFactory:
         :return: a function the performs the described action.
         """
         def make_meanless(vec: np.array):
+            vec = vec.astype('float64')
             non_zero_elements = vec[vec != 0]
             mean = np.mean(non_zero_elements)
 
-            sub_mean = np.vectorize(lambda x: 0 if x == 0 else x - mean)
+            sub_mean = np.vectorize(lambda x: 0.0 if x == 0 else float(x) - mean)
 
             return sub_mean(vec)
 

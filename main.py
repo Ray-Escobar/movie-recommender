@@ -1,15 +1,11 @@
-import numpy as np
-import pandas as pd
-from random import randint
-
 # -*- coding: utf-8 -*-
-from CosineLshUserCollaborativeFiltering import CosineLshUserCollaborativeFiltering
-from DataLoader import DataLoader
-from DataPathProvider import DataPathProvider
-from DiskPersistor import DiskPersistor
+from collaborative_filtering.CosineLshUserCollaborativeFiltering import CosineLshUserCollaborativeFiltering
+from data_handling.DataLoader import DataLoader
+from data_handling.DataPathProvider import DataPathProvider
+from data_handling.DiskPersistor import DiskPersistor
 from FormulaFactory import SimilarityMeasureType, FormulaFactory
-from LocalFileCsvProvider import LocalFileCsvProvider
-from NaiveUserCollaborativeFiltering import NaiveUserCollaborativeFiltering
+from data_handling.LocalFileCsvProvider import LocalFileCsvProvider
+from collaborative_filtering.NaiveUserCollaborativeFiltering import NaiveUserCollaborativeFiltering
 from PredictionStrategy import PredictionStrategy
 
 """

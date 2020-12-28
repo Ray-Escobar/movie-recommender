@@ -1,11 +1,12 @@
 from typing import List, Set, Tuple
 
-from DataLoader import DataLoader
 from FormulaFactory import FormulaFactory
 from PredictionStrategy import PredictionStrategy
 import numpy as np
 
-
+"""
+Deprectated! Better prediction methods exist!/
+"""
 class CosineLshUserCollaborativeFiltering(PredictionStrategy):
     """
     Makes predictions based on a more efficient collaborative filtering that uses and lsh to query for

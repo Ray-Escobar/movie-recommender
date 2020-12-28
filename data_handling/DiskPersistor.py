@@ -7,7 +7,7 @@ class DiskPersistor:
     """
     Class used to store the results of lengthy computations on disk.
     """
-    __persistence_dir = "persistence"
+    __persistence_dir = "../persistence"
 
     def perist_computation(self, computations: List[Tuple], force_update: bool = False) -> List:
         """

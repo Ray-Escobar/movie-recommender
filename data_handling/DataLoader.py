@@ -1,7 +1,7 @@
 from typing import List, Tuple
 
-from CsvProvider import CsvProvider
-from DataPathProvider import DataPathProvider
+from data_handling.CsvProvider import CsvProvider
+from data_handling.DataPathProvider import DataPathProvider
 import pandas as pd
 import numpy as np
 

@@ -1,7 +1,5 @@
-import numpy as np
-
-from DataLoader import DataLoader
-from DiskPersistor import DiskPersistor
+from data_handling.DataLoader import DataLoader
+from data_handling.DiskPersistor import DiskPersistor
 
 
 class PredictionStrategy:

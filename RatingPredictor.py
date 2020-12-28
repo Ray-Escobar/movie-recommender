@@ -1,8 +1,7 @@
 from typing import List
 
-from DataLoader import DataLoader
+from data_handling.DataLoader import DataLoader
 from PredictionStrategy import PredictionStrategy
-import numpy as np
 
 
 class RatingPredictor:
