@@ -49,7 +49,6 @@ class TestUserCollaborativeFiltering(unittest.TestCase):
 
 
         prediction_strategy.add_data_loader(data_loader)
-        prediction_strategy.add_disk_persistor(disk_persistor=DiskPersistor(), persistence_id='user_test_id', force_update=False)
 
         prediction_strategy.perform_precomputations()
 

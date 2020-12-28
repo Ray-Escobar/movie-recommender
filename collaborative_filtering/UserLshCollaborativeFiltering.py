@@ -75,9 +75,7 @@ class UserLshCollaborativeFiltering(PredictionStrategy):
             num_prediction += 1
             print('Progress {} / {}'.format(num_prediction, predictions_num))
 
-            print((user_id, movie_id))
-            print(self.user_id_to_row_dict)
-            print(self.movie_id_to_col_dict)
+
 
             row = self.user_id_to_row_dict[user_id]
             column = self.movie_id_to_col_dict[movie_id]
