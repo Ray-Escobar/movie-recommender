@@ -75,11 +75,12 @@ class RatingPredictor:
 
             # filter out the ratings that are 0, since the prediction rating is 0 when the strategy was not able to predict the rating
 
-            indexes = np.where(ratings > 0.0)
+            indexes = np.where(ratings > 0.0)[0]
 
             # if none of the strategies can predict the rating, then there is nothing we can do
             if len(indexes) == 0:
                 avg_prediction[prediction_key] = 0.0
+                continue
 
             ratings_non_zero = ratings[indexes]
             weights_non_zero = weights[indexes]
