@@ -1,14 +1,18 @@
 import unittest
 from unittest.mock import Mock
-from FormulaFactory import SimilarityMeasureType, FormulaFactory
+
+from collaborative_filtering.CosineLshUserCollaborativeFiltering import CosineLshUserCollaborativeFiltering
+from collaborative_filtering.ItemLshCollaborativeFiltering import ItemLshCollaborativeFiltering
+from data_handling.DiskPersistor import DiskPersistor
+from FormulaFactory import FormulaFactory
 
 
 import numpy as np
 
-from NaiveUserCollaborativeFiltering import NaiveUserCollaborativeFiltering
+from PredictionStrategy import PredictionStrategy
 
 
-class TestNaiveUserCollaborativeFiltering(unittest.TestCase):
+class TestItemCollaborativeFiltering(unittest.TestCase):
 
     rating_matrix = np.array([
         [0, 3, 1, 0, 5, 2, 0, 0, 5],
@@ -34,19 +38,30 @@ class TestNaiveUserCollaborativeFiltering(unittest.TestCase):
         data_loader.get_rating_matrix_user_and_movie_index_translation_dict = Mock(return_value = (self.user_id_to_row, self.movie_id_to_col))
         data_loader.get_ratings_matrix = Mock(return_value = self.rating_matrix)
 
-        prediction_strategy = NaiveUserCollaborativeFiltering(2, SimilarityMeasureType.MEANLESS_COSINE_SIMILARITY, FormulaFactory())
+        prediction_strategy: PredictionStrategy = ItemLshCollaborativeFiltering(
+            k_neighbors=5,
+            signiture_length=5,
+            max_query_distance=10,
+            formula_factory=FormulaFactory(),
+            random_seed=3
+        )
+
 
         prediction_strategy.add_data_loader(data_loader)
 
+        prediction_strategy.perform_precomputations()
+
         expected_prediction = {
-            (1, 1): 3.01,
-            (2, 1): 4.59,
-            (2, 2): 3.88,
-            (2, 8): 1.4,
-            (4, 5): 3.55
+            (1, 1): 2.435,
+            (2, 1): 2.636,
+            (2, 2): 2.255,
+            (2, 8): 2.0,
+            (4, 5): 4.0
         }
 
         actual_prediction = prediction_strategy.predict()
+
+        print(actual_prediction)
 
 
         for expected_rating, actual_rating in zip(expected_prediction.values(), actual_prediction.values()):

@@ -1,13 +1,16 @@
-import numpy as np
-import pandas as pd
-from random import randint
-
 # -*- coding: utf-8 -*-
-from DataLoader import DataLoader
-from DataPathProvider import DataPathProvider
+from typing import List
+
+from RatingPredictor import RatingPredictor
+from collaborative_filtering.CosineLshUserCollaborativeFiltering import CosineLshUserCollaborativeFiltering
+from collaborative_filtering.ItemLshCollaborativeFiltering import ItemLshCollaborativeFiltering
+from collaborative_filtering.UserLshCollaborativeFiltering import UserLshCollaborativeFiltering
+from data_handling.DataLoader import DataLoader
+from data_handling.DataPathProvider import DataPathProvider
+from data_handling.DiskPersistor import DiskPersistor
 from FormulaFactory import SimilarityMeasureType, FormulaFactory
-from LocalFileCsvProvider import LocalFileCsvProvider
-from NaiveUserCollaborativeFiltering import NaiveUserCollaborativeFiltering
+from data_handling.LocalFileCsvProvider import LocalFileCsvProvider
+from collaborative_filtering.NaiveUserCollaborativeFiltering import NaiveUserCollaborativeFiltering
 from PredictionStrategy import PredictionStrategy
 
 """
@@ -43,12 +46,9 @@ data_path_provider = DataPathProvider(movies_path=movies_file, users_path=users_
 
 # Creata a data loader
 data_loader = DataLoader(data_path_provider=data_path_provider, csv_provider=LocalFileCsvProvider())
+disk_persistor = DiskPersistor()
+formula_factory = FormulaFactory()
 
-# Read the data using pandas
-# movies_description = pd.read_csv(movies_file, delimiter=';', names=['movieID', 'year', 'movie'])
-# users_description = pd.read_csv(users_file, delimiter=';', names=['userID', 'gender', 'age', 'profession'])
-# ratings_description = pd.read_csv(ratings_file, delimiter=';', names=['userID', 'movieID', 'rating'])
-# predictions_description = pd.read_csv(predictions_file, delimiter=';', names=['userID', 'movieID'])
 
 
 
@@ -56,39 +56,59 @@ data_loader = DataLoader(data_path_provider=data_path_provider, csv_provider=Loc
 # users_data = data_loader.get_users_data()
 # ratings_data = data_loader.get_ratings_data()
 # predictions_data = data_loader.get_predictions_data()
-# ratings_matrix = data_loader.get_ratings_matrix()
 # ratings_table = data_loader.get_ratings_map()
 #
-# print(data_loader.get_prediction_instances())
+#print(ratings_matrix)
 
-formula_factory = FormulaFactory()
-prediction_strategy: PredictionStrategy = NaiveUserCollaborativeFiltering(3, SimilarityMeasureType.MEANLESS_COSINE_SIMILARITY, formula_factory)
-prediction_strategy.add_data_loader(data_loader)
-print(prediction_strategy.predict())
+predictor: RatingPredictor = RatingPredictor(
+    data_loader=data_loader,
+    disk_persistor=disk_persistor,
+    persistence_id='predictor',
+    prediction_strategies=[
+        ItemLshCollaborativeFiltering(
+            k_neighbors=30,
+            signiture_length=20,
+            max_query_distance=5000,
+            formula_factory=formula_factory,
+            random_seed=4,
+        ),
+        UserLshCollaborativeFiltering(
+            k_neighbors=30,
+            signiture_length=20,
+            max_query_distance=5000,
+            formula_factory=formula_factory,
+            random_seed=4,
+        )
+    ]
+)
 
 
 
-# def predict(movies, users, ratings, predictions):
-#     number_predictions = len(predictions)
-#
-#     return [[idx, randint(1, 5)] for idx in range(1, number_predictions + 1)]
-#
-#
-# #####
-# ##
-# ## SAVE RESULTS
-# ##
-# #####
-#
-# ## //!!\\ TO CHANGE by your prediction function
-# predictions = predict(movies_description, users_description, ratings_description, predictions_description)
-#
-# # Save predictions, should be in the form 'list of tuples' or 'list of lists'
-# with open(submission_file, 'w') as submission_writer:
-#     # Formates data
-#     predictions = [map(str, row) for row in predictions]
-#     predictions = [','.join(row) for row in predictions]
-#     predictions = 'Id,Rating\n' + '\n'.join(predictions)
-#
-#     # Writes it dowmn
-#     submission_writer.write(predictions)
+def predict(predictor: RatingPredictor, force_update: bool, weights: List[float]):
+    predictor.perform_precomputations(force_update=force_update)
+
+    predictions = predictor.make_average_prediction(weights=weights).values()
+    predictions = list(predictions)
+    number_predictions = len(predictions)
+
+    return [[idx, predictions[idx - 1]] for idx in range(1, number_predictions + 1)]
+
+
+#####
+##
+## SAVE RESULTS
+##
+#####
+
+## //!!\\ TO CHANGE by your prediction function
+predictions = predict(predictor, False, [0.7, 0.3])
+
+# Save predictions, should be in the form 'list of tuples' or 'list of lists'
+with open(submission_file, 'w') as submission_writer:
+    # Formates data
+    predictions = [map(str, row) for row in predictions]
+    predictions = [','.join(row) for row in predictions]
+    predictions = 'Id,Rating\n' + '\n'.join(predictions)
+
+    # Writes it dowmn
+    submission_writer.write(predictions)

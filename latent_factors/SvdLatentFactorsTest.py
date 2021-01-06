@@ -4,7 +4,7 @@ from unittest.mock import Mock
 import numpy as np
 
 from PredictionStrategy import PredictionStrategy
-from SvdLatentFactors import SvdLatentFactors
+from latent_factors.SvdLatentFactors import SvdLatentFactors
 
 
 class SvdLatentFactorsTest(unittest.TestCase):

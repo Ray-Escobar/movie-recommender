@@ -1,12 +1,14 @@
 from typing import List
 
-from DataLoader import DataLoader
+from data_handling.DataLoader import DataLoader
 from PredictionStrategy import PredictionStrategy
 from FormulaFactory import FormulaFactory, SimilarityMeasureType
 import numpy as np
 import heapq
 
-
+"""
+Deprectated! Better prediction methods exist!/
+"""
 class NaiveUserCollaborativeFiltering(PredictionStrategy):
     def __init__(self, k_neighbors: int, similarity_measure_type: SimilarityMeasureType, formula_factory: FormulaFactory):
         self.k_neighbors: int = k_neighbors
@@ -112,6 +114,8 @@ class NaiveUserCollaborativeFiltering(PredictionStrategy):
 
         for sim, user_index in most_similar_neighbors:
             sim_rating_tuples.append((sim, self.ratings_matrix[user_index, target_movie_index]))
+
+        print(sim_rating_tuples)
 
         # return the similarity weighted average of the ratings
         sim_avg = self.formula_factory.create_rating_average_weighted_by_similarity_function()
