@@ -12,7 +12,6 @@ class SvdLatentFactors(PredictionStrategy):
     def __init__(self, r_singular_values):
         self.r_singular_values = r_singular_values
 
-
     def add_data_loader(self, data_loader: DataLoader):
         self.ratings_matrix = data_loader.get_ratings_matrix()
 
