@@ -7,18 +7,14 @@ class UvDecomposer():
     """
 
     def __init__(self, d:float, m_rating_matrix:np.array):
-        #d cant be 1 or less, or greater than M dimensions
+        # d cant be 1 or less, or greater than M dimensions
         assert(d > 1)
         assert(d < len(m_rating_matrix) and d < len(m_rating_matrix[0]) )
 
 
-        self.zero_values = np.where(M == 0)        #find the undefined values
-        
-        normalization = self.__normalize(m_rating_matrix) #normalize given matrix m
+        self.zero_values = np.where(M == 0)  #find the undefined values
 
-        self.M = normalization[0]
-        self.avg_users = normalization[1]
-        self.avg_items = normalization[2]
+        self.M, self.avg_users, self.avg_items = self.__normalize(m_rating_matrix) #normalize given matrix m
 
         #Create U and V
         #   U is a n x d matrix
