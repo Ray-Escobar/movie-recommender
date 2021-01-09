@@ -3,7 +3,7 @@ import RMSE
 
 class UvDecomposer():
     """
-    Makes predictions by performing an SVD decomposition on the provided matrix
+    Makes predictions by performing an UV decomposition on the provided matrix
     """
 
     def __init__(self, d:float, m_rating_matrix:np.array):
@@ -26,9 +26,8 @@ class UvDecomposer():
         
         #Note: since M is normalized we create 0 matrices since sqrt(avg/d) is always 0
         # and for randomness move em around a beteen uniform
-        # variable (-1,1)
+        # variable (-1,1) with this formula: (b - a) * random((num_row, num_col)) + a
 
-        #(b - a) * random((row, col)) + a
         rng = np.random.default_rng()
         self.U = 2 * rng.random((len(self.M[0]), d)) -1
         self.V = 2 * rng.random((d, len(self.M)))    -1
@@ -39,13 +38,33 @@ class UvDecomposer():
         return 4
 
     def predict(self, iter:int):
+        """
+        Start creating prediciton matrix given 
+        a number of iterations
+
+        :param iter: number of iterations to run for
+        """
         return self.__perform_decomposition(iter)
 
 
     def get_user_movie_rating(self, row:int, col:int) -> (float):
-        return self.M[row][col] + ((self.avg_users[row] + self.avg_items[col])/2)
+        """
+        Get a single prediction (quite inefficient)
+
+        :param row: row where value resides
+        :param col: col where value resides
+
+        :return: prediction
+        """
+
+        return np.matmul(self.U, self.V)[row][col] + ((self.avg_users[row] + self.avg_items[col])/2)
 
     def get_prediction_matrix(self) -> (np.array):
+        """
+        Get the full prediction matrix
+
+        :return: prediction matrix
+        """
 
         predictions = np.matmul(self.U, self.V)
 
@@ -211,6 +230,7 @@ M = M.astype(float)
 
 
 decomposer = UvDecomposer(2,M)
+decomposer.predict(8)
 print()
 print(decomposer.get_prediction_matrix())
 print()
