@@ -11,7 +11,7 @@ from collaborative_filtering.UserLshCollaborativeFiltering import UserLshCollabo
 from data_handling.DataLoader import DataLoader
 from data_handling.DataPathProvider import DataPathProvider
 from data_handling.DiskPersistor import DiskPersistor
-from FormulaFactory import SimilarityMeasureType, FormulaFactory
+from FormulaFactory import SimilarityMeasureType, ScoringMeasureType, FormulaFactory
 from data_handling.LocalFileCsvProvider import LocalFileCsvProvider
 from collaborative_filtering.NaiveUserCollaborativeFiltering import NaiveUserCollaborativeFiltering
 from matrix_factorization.UvDecomposition import UvDecomposer
@@ -69,6 +69,19 @@ predictor: RatingPredictor = RatingPredictor(
     disk_persistor=disk_persistor,
     persistence_id='predictor',
     prediction_strategies=[
+        UvDecomposer(
+            d = 5,
+            delta = 1,
+            iterations = 100,
+            formula_factory=formula_factory,
+            scorer_type= ScoringMeasureType.TRUE_RMSE
+        )
+    ]
+)
+
+
+'''
+prediction_strategies=[
         ItemLshCollaborativeFiltering(
             k_neighbors=30,
             signiture_length=20,
@@ -82,9 +95,15 @@ predictor: RatingPredictor = RatingPredictor(
             max_query_distance=5000,
             formula_factory=formula_factory,
             random_seed=4,
+        ),
+        UvDecomposer(
+            d = 5,
+            delta = 1,
+            iterations = 100,
+            formula_factory=formula_factory
         )
     ]
-)
+'''
 
 
 
@@ -104,11 +123,10 @@ def predict(predictor: RatingPredictor, force_update: bool, weights: List[float]
 ##
 #####
 
-print("didnt get there")
 ## //!!\\ TO CHANGE by your prediction function
-predictions = predict(predictor, False, [0.7, 0.3])
+#predictions = predict(predictor, False, [0.7, 0.3])
+predictions = predict(predictor, False, [1])
 
-print("got here")
 # Save predictions, should be in the form 'list of tuples' or 'list of lists'
 with open(submission_file, 'w') as submission_writer:
     # Formates data

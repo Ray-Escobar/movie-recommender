@@ -14,14 +14,15 @@ class UvDecomposer():
     Makes predictions by performing an UV decomposition on the provided matrix
     """
 
-    def __init__(self, d:int, iterations:int, delta:float, scorer_type: ScoringMeasureType,formula_factory: FormulaFactory):
+    def __init__(self, d:int, iterations:int, delta:float, formula_factory:FormulaFactory,scorer_type: ScoringMeasureType):
+
         # d cant be 1 or less
         assert(d > 1)
         
         self.d = d                      #dimensions of the thin part
         self.delta = delta              #speed of descent
         self.iterations = iterations    #number of iterations to go for
-        self.scoring_measure = formula_factory.create_scoring_measure(scorer_type)
+        self.scoring_measure = formula_factory.create_scoring_measure(scoring_measure_type=scorer_type)
         
 
     def add_data_loader(self, data_loader: DataLoader):
@@ -39,12 +40,13 @@ class UvDecomposer():
         self.ratings_matrix = self.data_loader.get_ratings_matrix()
 
         #d can't be greater than the dimensions of M
-        assert(d < len(self.ratings_matrix) and d < len(self.ratings_matrix[0]))
+        assert(self.d < len(self.ratings_matrix) and self.d < len(self.ratings_matrix[0]))
 
         #Find the zero values
         self.zero_values = np.where(self.ratings_matrix == 0)  #find the undefined values
 
         #Return normalized matrix M, and the avg_usr and avg_item vectors
+        print("normalizing matrix now")
         self.M, self.avg_users, self.avg_items = MatrixNormalize.normalize(self.ratings_matrix, self.zero_values)
 
 
@@ -186,7 +188,7 @@ class UvDecomposer():
         
         numer = (self.U[:,row]*sums).sum()
         
-        self.V[row][col] = numer / denom
+        self.V[row][col] = delta*(numer / denom)
 
     def perform_precomputations(self):
         """
@@ -216,7 +218,7 @@ class UvDecomposer():
 
         print("Starting predictions with UV decomposition...")
 
-        self.__perform_decomposition()
+        self.__perform_decomposition() #start UV decompositon
 
         predictions_num = len(instances_to_be_predicted)
         num_prediction = 0
@@ -236,40 +238,3 @@ class UvDecomposer():
         print("Finished predictions!")
 
         return predictions
-
-
-'''
-
-M = np.array([[5,2,4,4,3], 
-              [3,1,2,4,1], 
-              [2,0,3,1,4], 
-              [2,5,4,3,5],
-              [4,4,5,4,0]])
-
-M = M.astype(float)
-
-# Where data is located
-movies_file      = '../data/movies.csv'
-users_file       = '../data/users.csv'
-ratings_file     = '../data/ratings.csv'
-predictions_file = '../data/predictions.csv'
-submission_file  = '../data/submission.csv'
-
-
-from data_handling.DataPathProvider import DataPathProvider
-from data_handling.LocalFileCsvProvider import LocalFileCsvProvider
-
-# Create a data path provider
-data_path_provider = DataPathProvider(movies_path=movies_file, users_path=users_file, ratings_path=ratings_file, predictions_path=predictions_file, submission_path=submission_file)
-
-# Creata a data loader
-data_loader = DataLoader(data_path_provider=data_path_provider, csv_provider=LocalFileCsvProvider())
-
-
-
-
-decomposer = UvDecomposer(2,M)
-decomposer.add_data_loader(data_loader)
-
-print(decomposer.user_id_data)
-'''

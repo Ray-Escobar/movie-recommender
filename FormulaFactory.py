@@ -65,7 +65,7 @@ class FormulaFactory:
 
     def create_true_rmse_measure(self):
         """
-        to implement
+        RMSE measure
         """
 
         def take_rmse_score(M:np.array, UV:np.array, zero_values:np.array, n:int):
@@ -97,6 +97,7 @@ class FormulaFactory:
         else:
             raise Exception("Unsuported similarity type!")
 
+
     def create_scoring_measure(self, scoring_measure_type: ScoringMeasureType):
         """
         Returns a function the performs the desired similarity type
@@ -105,8 +106,8 @@ class FormulaFactory:
 
         :return: a similarity measure of the desired type
         """
-        if scoring_measure_type is SimilarityMeasureType.TRUE_RMSE:
-            return self.create_true_rmse()
+        if scoring_measure_type is ScoringMeasureType.TRUE_RMSE:
+            return self.create_true_rmse_measure()
 
         else:
             raise Exception("Unsuported similarity type!")
