@@ -92,6 +92,7 @@ class DataLoader:
         for col, movie_id in enumerate(movie_data):
             self.movie_id_to_ratings_matrix_column[movie_id] = col
 
+        #user is actually that row in the matrix   this movie with this id is mapped to that column
         return self.user_id_to_ratings_matrix_row, self.movie_id_to_ratings_matrix_column
 
 

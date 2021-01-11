@@ -14,39 +14,22 @@ class UvDecomposer():
     Makes predictions by performing an UV decomposition on the provided matrix
     """
 
-    def __init__(self, d:float, delta:float, m_rating_matrix:np.array, scorer_type: ScoringMeasureType,formula_factory: FormulaFactory):
-        # d cant be 1 or less, or greater than M dimensions
+    def __init__(self, d:int, iterations:int, delta:float, scorer_type: ScoringMeasureType,formula_factory: FormulaFactory):
+        # d cant be 1 or less
         assert(d > 1)
-        assert(d < len(m_rating_matrix) and d < len(m_rating_matrix[0]) )
-        self.d = d
-
-
-        self.scoring_measure = formula_factory.create_scoring_measure(scorer_type)
-
-
-        self.zero_values = np.where(m_rating_matrix == 0)  #find the undefined values
-
-        self.M, self.avg_users, self.avg_items = MatrixNormalize.normalize(m_rating_matrix, self.zero_values)
-
-        #Create U and V
-        #   U is a n x d matrix
-        #   V is a d x n matrix
         
-        #Note: since M is normalized we create 0 matrices since sqrt(avg/d) is always 0
-        # and for randomness move them around a beteen uniform
-        # variable (-1,1) with this formula: (b - a) * random((num_row, num_col)) + a
-
-        rng = np.random.default_rng()
-        self.U = 2 * rng.random((len(self.M[0]), d)) -1
-        self.V = 2 * rng.random((d, len(self.M)))    -1
-        self.number_of_values = (len(self.M) * len(self.M[0])) - len(self.zero_values)
+        self.d = d                      #dimensions of the thin part
+        self.delta = delta              #speed of descent
+        self.iterations = iterations    #number of iterations to go for
+        self.scoring_measure = formula_factory.create_scoring_measure(scorer_type)
+        
 
     def add_data_loader(self, data_loader: DataLoader):
 
         PredictionStrategy.add_data_loader(self, data_loader)
 
         # vectors encoding the user ids and movie ids for each rows and columns
-        self.user_id_data, self.movie_id_data = self.data_loader.get_rating_matrix_user_and_movie_data()
+        #self.user_id_data, self.movie_id_data = self.data_loader.get_rating_matrix_user_and_movie_data()
 
         # dictionaries translating from user ids to rows and movie ids to columns
         self.user_id_to_row, self.movie_id_to_column = self.data_loader.get_rating_matrix_user_and_movie_index_translation_dict()
@@ -55,8 +38,31 @@ class UvDecomposer():
         # load the ratings matrix
         self.ratings_matrix = self.data_loader.get_ratings_matrix()
 
-        # compute the similarity matrix
-        #self.similarity_matrix = self.__compute_similarity_matrix()
+        #d can't be greater than the dimensions of M
+        assert(d < len(self.ratings_matrix) and d < len(self.ratings_matrix[0]))
+
+        #Find the zero values
+        self.zero_values = np.where(self.ratings_matrix == 0)  #find the undefined values
+
+        #Return normalized matrix M, and the avg_usr and avg_item vectors
+        self.M, self.avg_users, self.avg_items = MatrixNormalize.normalize(self.ratings_matrix, self.zero_values)
+
+
+        #Create U and V
+        #   M us a n x m matrix
+        #   U is a n x d matrix
+        #   V is a d x m matrix
+        
+        #Note: since M is normalized we create 0 matrices since sqrt(avg/d) is always 0
+        # and for randomness move them around with uniform
+        # variable U(-1,1) with this formula: (b - a) * random((len(row), len(col))) + a
+
+        rng = np.random.default_rng()
+        self.U = 2 * rng.random((len(self.M[0]), d)) -1
+        self.V = 2 * rng.random((d, len(self.M)))    -1
+
+        self.number_of_values = len(self.M) * len(self.M[0]) - len(self.zero_values)
+
 
     def get_prediction_matrix(self) -> (np.array):
         """
@@ -67,12 +73,20 @@ class UvDecomposer():
 
         predictions = np.matmul(self.U, self.V)
 
-        #now fill up prediction matrix with actual predictions
+        #now fill up prediction matrix with actual predictions by removing normalization
         for row in range(len(self.M)):
             for col in range(len(self.M[0])):
                 predictions[row][col] = predictions[row][col] + ((self.avg_users[row] + self.avg_items[col])/2)
 
-        return predictions 
+        return predictions
+
+    def get_predictions(self, user_row:int, item_col:int) -> dict:
+        """
+        Get the prediction for the user and movie
+
+        :return: prediction matrix
+        """
+        return self.predictions[user_row][item_col] + ((self.avg_users[user_row] + self.avg_items[item_col])/2)
 
     def score(self) -> (float):
         """
@@ -82,7 +96,7 @@ class UvDecomposer():
         """
         return self.scoring_measure(self.M, np.matmul(self.U, self.V), self.zero_values, self.number_of_values)
 
-    def __perform_decomposition(self, iterations:int, delat:int):
+    def __perform_decomposition(self):
         """
         Performs UV decomposition on the ratings matrix.
         Generate prediction matrix UV
@@ -99,12 +113,15 @@ class UvDecomposer():
         np.random.shuffle(col_values)
 
         #Gradient descent process for k iterations
-        for k in range(iterations):
+        for k in range(self.iterations):
             for i in row_values:
                 for j in col_values:
                     self.__decompose_matrix_u(i, j)
                     self.__decompose_matrix_v(j, i)
             print("Iteration " + str(k+1) + ": Score => " ,self.score())        
+
+        self.predictions = np.matmul(self.U, self.V) #generate the predictions
+
 
     def __decompose_matrix_u(self, row:int, col:int):
         """
@@ -183,7 +200,7 @@ class UvDecomposer():
         Makes predictions based on user-user collaborative filtering.
         """
         PredictionStrategy.predict(self)
-        return self.__predict(self.zero_values)
+        return self.__predict(self.user_movie_instances_to_be_predicted)
 
     def __predict(self, instances_to_be_predicted: (int, int)) -> dict:
         """
@@ -197,7 +214,9 @@ class UvDecomposer():
 
         predictions = dict()
 
-        print("Starting predictions...")
+        print("Starting predictions with UV decomposition...")
+
+        self.__perform_decomposition()
 
         predictions_num = len(instances_to_be_predicted)
         num_prediction = 0
@@ -206,8 +225,9 @@ class UvDecomposer():
             num_prediction += 1
             print('Progress {} / {}'.format(num_prediction, predictions_num))
 
-            row = self.movie_id_to_col_dict[movie_id]
-            column = self.user_id_to_row_dict[user_id]
+            column = self.user_id_to_row[user_id]
+            row    = self.movie_id_to_col[movie_id]
+            
 
             rating = self.predictor.predict(row, column)
 
