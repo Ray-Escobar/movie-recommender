@@ -9,8 +9,11 @@ class MatrixDimensionalityReducer:
     The matrix is first reduced by rows, and then by columns.
     The algorithm assumes that after reducing by rows, the similarity among columns remains approximately the same
     """
-    def __init__(self, new_dimension: np.array):
+    def __init__(self, new_dimension: np.array, randomized: bool = False, randomized_num_extractions: int = 100, random_seed: int = 3):
         self.new_dimension = new_dimension
+        self.randomized = randomized
+        self.randomized_num_extractions = randomized_num_extractions
+        self.random_seed = random_seed
 
 
     def reduce_matrix(self, matrix: np.array, row_similarity_matrix: np.array, column_similarity_matrix: np.array):
@@ -38,7 +41,10 @@ class MatrixDimensionalityReducer:
         clusterer: AgglomerativeClusterer = AgglomerativeClusterer(
             item_indices=[i for i in range(matrix.shape[0])],
             k_clusters=new_num_rows,
-            sim_matrix=row_sim_mat
+            sim_matrix=row_sim_mat,
+            randomized=self.randomized,
+            randomized_num_extractions=self.randomized_num_extractions,
+            random_seed=self.random_seed
         )
 
         partitioned_indices = clusterer.get_partitioned_item_indices()

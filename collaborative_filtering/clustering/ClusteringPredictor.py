@@ -8,12 +8,13 @@ from collaborative_filtering.clustering.MatrixDimensionalityReducer import Matri
 
 
 class ClusteringPredictor:
-    def __init__(self, data_matrix: np.array, row_similarity_matrix: np.array, col_similarity_matrix: np.array, new_dim: Tuple[int, int], k_neighbors: int):
+    def __init__(self, data_matrix: np.array, row_similarity_matrix: np.array, col_similarity_matrix: np.array, new_dim: Tuple[int, int], k_neighbors: int, randomized: bool = False, randomized_num_extractions: int = 100, random_seed: int = 3):
         self.data_matrix = data_matrix
         self.row_similarity_matrix = row_similarity_matrix
         self.col_similarity_matrix = col_similarity_matrix
-        self.mat_reducer = MatrixDimensionalityReducer(new_dim)
+        self.mat_reducer = MatrixDimensionalityReducer(new_dim, randomized, randomized_num_extractions, random_seed)
         self.k_neighbors = k_neighbors # the number of neighbors to be used in case the reduced matrix still has a miss
+
 
 
         self.reduced_matrix = None

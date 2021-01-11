@@ -94,8 +94,11 @@ predictor: RatingPredictor = RatingPredictor(
         ClusterCollaborativeFiltering(
             row_similarity_matrix=global_pearson_similarity_matrix_user,
             col_similarity_matrix=global_pearson_similarity_matrix_movie,
-            new_dim=(300, 300),
-            k_neighbors=10
+            new_dim=(2000, 2000),
+            k_neighbors=35,
+            randomized=True,
+            randomized_num_extractions=2000,
+            random_seed=3
         )
     ]
 )
