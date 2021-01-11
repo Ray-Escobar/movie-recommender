@@ -1,8 +1,8 @@
 from FormulaFactory import FormulaFactory, SimilarityMeasureType
 from PredictionStrategy import PredictionStrategy
-from collaborative_filtering.CosineDistanceLsh import CosineDistanceLsh
-from collaborative_filtering.LocalitySensitiveHashTable import LocalitySensitiveHashTable
-from collaborative_filtering.LshCollaborativeFilteringPredictor import LshCollaborativeFilteringPredictor
+from collaborative_filtering.lsh.CosineDistanceLsh import CosineDistanceLsh
+from collaborative_filtering.lsh.LocalitySensitiveHashTable import LocalitySensitiveHashTable
+from collaborative_filtering.lsh.LshCollaborativeFilteringPredictor import LshCollaborativeFilteringPredictor
 
 
 class ItemLshCollaborativeFiltering(PredictionStrategy):
@@ -49,7 +49,7 @@ class ItemLshCollaborativeFiltering(PredictionStrategy):
 
     def predict(self):
         """
-        Makes predictions based on user-user collaborative filtering.
+        Makes predictions based on item-item collaborative filtering.
         """
         PredictionStrategy.predict(self)
         return self.__predict(self.user_movie_instances_to_be_predicted)

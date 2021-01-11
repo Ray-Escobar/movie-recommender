@@ -1,8 +1,7 @@
 import unittest
 from unittest.mock import Mock
 
-from collaborative_filtering.CosineLshUserCollaborativeFiltering import CosineLshUserCollaborativeFiltering
-from data_handling.DiskPersistor import DiskPersistor
+from collaborative_filtering.lsh.UserLshCollaborativeFiltering import UserLshCollaborativeFiltering
 from FormulaFactory import FormulaFactory
 
 
@@ -11,7 +10,7 @@ import numpy as np
 from PredictionStrategy import PredictionStrategy
 
 
-class TestCosineLshUserCollaborativeFiltering(unittest.TestCase):
+class TestUserCollaborativeFiltering(unittest.TestCase):
 
     rating_matrix = np.array([
         [0, 3, 1, 0, 5, 2, 0, 0, 5],
@@ -37,23 +36,25 @@ class TestCosineLshUserCollaborativeFiltering(unittest.TestCase):
         data_loader.get_rating_matrix_user_and_movie_index_translation_dict = Mock(return_value = (self.user_id_to_row, self.movie_id_to_col))
         data_loader.get_ratings_matrix = Mock(return_value = self.rating_matrix)
 
-        prediction_strategy: PredictionStrategy = CosineLshUserCollaborativeFiltering(4, 32, 64, FormulaFactory(), random_seed=3)
-
-        fact = FormulaFactory()
-        avg = fact.create_rating_average_weighted_by_similarity_function()
+        prediction_strategy: PredictionStrategy = UserLshCollaborativeFiltering(
+            k_neighbors=5,
+            signiture_length=4,
+            max_query_distance=16,
+            formula_factory=FormulaFactory(),
+            random_seed=3
+        )
 
 
         prediction_strategy.add_data_loader(data_loader)
-        prediction_strategy.add_disk_persistor(disk_persistor=DiskPersistor(), persistence_id='test_id', force_update=False)
 
         prediction_strategy.perform_precomputations()
 
         expected_prediction = {
-            (1, 1): 3.01,
+            (1, 1): 0.0,
             (2, 1): 4.59,
             (2, 2): 3.91,
             (2, 8): 1.4,
-            (4, 5): 2.618
+            (4, 5): 3.55
         }
 
         actual_prediction = prediction_strategy.predict()

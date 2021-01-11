@@ -14,6 +14,7 @@ class PredictionStrategy:
 
     __precomputations_performed = False
 
+    disk_persistor = None
 
     def add_data_loader(self, data_loader: DataLoader):
         """
@@ -25,6 +26,9 @@ class PredictionStrategy:
 
         self.__data_loader_added = True
         self.data_loader:DataLoader = data_loader
+
+        # initializes the user-movie instances to be predicted
+        self.user_movie_instances_to_be_predicted = self.data_loader.get_prediction_instances()
 
 
 
@@ -40,8 +44,7 @@ class PredictionStrategy:
         self.force_update = force_update
         self.persistence_id = persistence_id
 
-        # initializes the user-movie instances to be predicted
-        self.user_movie_instances_to_be_predicted = self.data_loader.get_prediction_instances()
+
 
 
 
