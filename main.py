@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 from typing import List
 
+import sys
+sys.path.append('.')
+
 from RatingPredictor import RatingPredictor
 from collaborative_filtering.CosineLshUserCollaborativeFiltering import CosineLshUserCollaborativeFiltering
 from collaborative_filtering.ItemLshCollaborativeFiltering import ItemLshCollaborativeFiltering
@@ -11,6 +14,7 @@ from data_handling.DiskPersistor import DiskPersistor
 from FormulaFactory import SimilarityMeasureType, FormulaFactory
 from data_handling.LocalFileCsvProvider import LocalFileCsvProvider
 from collaborative_filtering.NaiveUserCollaborativeFiltering import NaiveUserCollaborativeFiltering
+from matrix_factorization.UvDecomposition import UvDecomposer
 from PredictionStrategy import PredictionStrategy
 
 """
@@ -100,9 +104,11 @@ def predict(predictor: RatingPredictor, force_update: bool, weights: List[float]
 ##
 #####
 
+print("didnt get there")
 ## //!!\\ TO CHANGE by your prediction function
 predictions = predict(predictor, False, [0.7, 0.3])
 
+print("got here")
 # Save predictions, should be in the form 'list of tuples' or 'list of lists'
 with open(submission_file, 'w') as submission_writer:
     # Formates data

@@ -1,27 +1,39 @@
 import numpy as np
-import RMSE
+
+import sys
+
+sys.path.append('.')
+
+from FormulaFactory import FormulaFactory, ScoringMeasureType
+from data_handling.DataLoader import DataLoader
+from PredictionStrategy import PredictionStrategy
+from matrix_factorization import MatrixNormalize
 
 class UvDecomposer():
     """
     Makes predictions by performing an UV decomposition on the provided matrix
     """
 
-    def __init__(self, d:float, m_rating_matrix:np.array):
+    def __init__(self, d:float, delta:float, m_rating_matrix:np.array, scorer_type: ScoringMeasureType,formula_factory: FormulaFactory):
         # d cant be 1 or less, or greater than M dimensions
         assert(d > 1)
         assert(d < len(m_rating_matrix) and d < len(m_rating_matrix[0]) )
+        self.d = d
 
 
-        self.zero_values = np.where(M == 0)  #find the undefined values
+        self.scoring_measure = formula_factory.create_scoring_measure(scorer_type)
 
-        self.M, self.avg_users, self.avg_items = self.__normalize(m_rating_matrix) #normalize given matrix m
+
+        self.zero_values = np.where(m_rating_matrix == 0)  #find the undefined values
+
+        self.M, self.avg_users, self.avg_items = MatrixNormalize.normalize(m_rating_matrix, self.zero_values)
 
         #Create U and V
         #   U is a n x d matrix
         #   V is a d x n matrix
         
         #Note: since M is normalized we create 0 matrices since sqrt(avg/d) is always 0
-        # and for randomness move em around a beteen uniform
+        # and for randomness move them around a beteen uniform
         # variable (-1,1) with this formula: (b - a) * random((num_row, num_col)) + a
 
         rng = np.random.default_rng()
@@ -29,31 +41,22 @@ class UvDecomposer():
         self.V = 2 * rng.random((d, len(self.M)))    -1
         self.number_of_values = (len(self.M) * len(self.M[0])) - len(self.zero_values)
 
-    def add_data_loader(self, data_loader: int):
-        #self.ratings_matrix = data_loader.get_ratings_matrix()
-        return 4
+    def add_data_loader(self, data_loader: DataLoader):
 
-    def predict(self, iter:int):
-        """
-        Start creating prediciton matrix given 
-        a number of iterations
+        PredictionStrategy.add_data_loader(self, data_loader)
 
-        :param iter: number of iterations to run for
-        """
-        return self.__perform_decomposition(iter)
+        # vectors encoding the user ids and movie ids for each rows and columns
+        self.user_id_data, self.movie_id_data = self.data_loader.get_rating_matrix_user_and_movie_data()
+
+        # dictionaries translating from user ids to rows and movie ids to columns
+        self.user_id_to_row, self.movie_id_to_column = self.data_loader.get_rating_matrix_user_and_movie_index_translation_dict()
 
 
-    def get_user_movie_rating(self, row:int, col:int) -> (float):
-        """
-        Get a single prediction (quite inefficient)
+        # load the ratings matrix
+        self.ratings_matrix = self.data_loader.get_ratings_matrix()
 
-        :param row: row where value resides
-        :param col: col where value resides
-
-        :return: prediction
-        """
-
-        return np.matmul(self.U, self.V)[row][col] + ((self.avg_users[row] + self.avg_items[col])/2)
+        # compute the similarity matrix
+        #self.similarity_matrix = self.__compute_similarity_matrix()
 
     def get_prediction_matrix(self) -> (np.array):
         """
@@ -71,81 +74,37 @@ class UvDecomposer():
 
         return predictions 
 
-    def RMSE(self) -> (float):
+    def score(self) -> (float):
         """
+        Calcualtes error of the UV matrix
 
-        Creates an error vector with the Root-Mean-Square-Error
-        measuring criteria.
-
-        :return: RMSE value
+        :return: score value from scoring measure
         """
+        return self.scoring_measure(self.M, np.matmul(self.U, self.V), self.zero_values, self.number_of_values)
 
-        sum_matrix = self.M - np.matmul(self.U, self.V)  #substract UV from M
-        sum_matrix[self.zero_values] = 0                 #set the 0 values to 0 again
-        
-        #square the matrix, sum the rows, sum the vectors, divide by
-        # number of non-zero-entries and take the square root
-        return np.sqrt((np.square(sum_matrix)).sum(axis = 1).sum()/self.number_of_values)
-
-    def __normalize(self, M:np.array) -> (np.array, np.array, np.array):
-        """
-        Normalizes given matrix M
-
-        :return: Normalized matrix
-        :return: Average of rows
-        :return: Average of cols
-        """
-        
-        #boolean matrix to get sum of non-zero values 
-        # to calcualte the averages
-        non_zeros = M > 0 
-        users_i = non_zeros.sum(axis=1)
-        items_j = non_zeros.sum(axis=0)
-
-
-        #divide sum of user rating by number of times user gave a rating
-        # divide sum of movie rating by number of times movie was rated 
-        avg_users = M.sum(axis=1)/users_i
-        avg_items = M.sum(axis=0)/items_j
-
-
-        normalized_m = np.zeros((len(M), len(M[0])))
-        #now fill up M matrix with normalized values
-        for row in range(len(M)):
-            for col in range(len(M[0])):
-                #substact entry m_ij by (avg_user+avg_itme)/2
-                normalized_m[row][col] = M[row][col] - (avg_users[row]+avg_items[col])/2
-    
-        normalized_m[self.zero_values] = 0
-
-        return normalized_m, avg_users, avg_items
-
-    def __perform_decomposition(self, iter:int):
+    def __perform_decomposition(self, iterations:int, delat:int):
         """
         Performs UV decomposition on the ratings matrix.
         Generate prediction matrix UV
 
-        :param iter: numer of iterations to run 
+        :param iterations: numer of iterations to run 
         """
 
         #randomly choosing rows
-        row_values = np.arange(5)
+        row_values = np.arange(len(self.U))
         np.random.shuffle(row_values)
 
         #randomly choosing columns
-        col_values = np.arange(2)
+        col_values = np.arange(self.d)
         np.random.shuffle(col_values)
 
         #Gradient descent process for k iterations
-        for k in range(iter):
+        for k in range(iterations):
             for i in row_values:
                 for j in col_values:
                     self.__decompose_matrix_u(i, j)
                     self.__decompose_matrix_v(j, i)
-            print("Iteration " + str(k+1) + ": RMSE Score => " ,self.RMSE())        
-
-
-
+            print("Iteration " + str(k+1) + ": Score => " ,self.score())        
 
     def __decompose_matrix_u(self, row:int, col:int):
         """
@@ -160,9 +119,9 @@ class UvDecomposer():
         zeroes = np.where(m_rj == 0)  #find the zeroes to ignore them
 
         #Denominator of the equation
-        denom = np.square(self.V[col]) #col == d
+        denom         = np.square(self.V[col]) #col == d
         denom[zeroes] = 0
-        denom = denom.sum()
+        denom         = denom.sum()
         
         row_u = np.copy(self.U[row])    #get the row of U
         row_u[col] = 0                  #where the variable is located we set it to 0
@@ -193,9 +152,9 @@ class UvDecomposer():
         m_is = self.M[:,col]           #get the respective col
         zeroes = np.where(m_is == 0)   #find the zeroes to ignore them
 
-        denom = np.square(self.U[:,row])  ## row == d
+        denom         = np.square(self.U[:,row])  ## row == d
         denom[zeroes] = 0
-        denom = denom.sum()
+        denom         = denom.sum()
 
         v_col = np.copy(self.V[:,col])     #get the respective row of v
         v_col[row] = 0
@@ -212,9 +171,54 @@ class UvDecomposer():
         
         self.V[row][col] = numer / denom
 
+    def perform_precomputations(self):
+        """
+        Empty since catalin said to not precompute stuff
+        since we are using the pickle library
+        """
+        pass
+
+    def predict(self):
+        """
+        Makes predictions based on user-user collaborative filtering.
+        """
+        PredictionStrategy.predict(self)
+        return self.__predict(self.zero_values)
+
+    def __predict(self, instances_to_be_predicted: (int, int)) -> dict:
+        """
+        Predicts the ratings for the provided instances.
+        The provided instances should be a list of (user_id, movie_id) tuples.
+        The returned predictions are a dictionary, index by the (user_id, movie_id) tuples, containing the predicted ratings.
+
+        :param instances_to_be_predicted: the list of (user_id, movie_id) tuples to make predictions from
+        :return: the dictionary containing the predicted ratings, indexed by the user_id, movie_id tuples
+        """
+
+        predictions = dict()
+
+        print("Starting predictions...")
+
+        predictions_num = len(instances_to_be_predicted)
+        num_prediction = 0
+
+        for user_id, movie_id in instances_to_be_predicted:
+            num_prediction += 1
+            print('Progress {} / {}'.format(num_prediction, predictions_num))
+
+            row = self.movie_id_to_col_dict[movie_id]
+            column = self.user_id_to_row_dict[user_id]
+
+            rating = self.predictor.predict(row, column)
+
+            predictions[(user_id, movie_id)] = rating
+
+        print("Finished predictions!")
+
+        return predictions
 
 
-
+'''
 
 M = np.array([[5,2,4,4,3], 
               [3,1,2,4,1], 
@@ -224,9 +228,28 @@ M = np.array([[5,2,4,4,3],
 
 M = M.astype(float)
 
+# Where data is located
+movies_file      = '../data/movies.csv'
+users_file       = '../data/users.csv'
+ratings_file     = '../data/ratings.csv'
+predictions_file = '../data/predictions.csv'
+submission_file  = '../data/submission.csv'
+
+
+from data_handling.DataPathProvider import DataPathProvider
+from data_handling.LocalFileCsvProvider import LocalFileCsvProvider
+
+# Create a data path provider
+data_path_provider = DataPathProvider(movies_path=movies_file, users_path=users_file, ratings_path=ratings_file, predictions_path=predictions_file, submission_path=submission_file)
+
+# Creata a data loader
+data_loader = DataLoader(data_path_provider=data_path_provider, csv_provider=LocalFileCsvProvider())
+
+
+
 
 decomposer = UvDecomposer(2,M)
-decomposer.predict(8)
-print()
-print(decomposer.get_prediction_matrix())
-print()
+decomposer.add_data_loader(data_loader)
+
+print(decomposer.user_id_data)
+'''

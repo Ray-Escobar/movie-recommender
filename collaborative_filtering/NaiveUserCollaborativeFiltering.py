@@ -87,6 +87,7 @@ class NaiveUserCollaborativeFiltering(PredictionStrategy):
                 user1_ratings = self.ratings_matrix[user1_index, :]
                 user2_ratings = self.ratings_matrix[user2_index, :]
 
+                #this is where the similarity measu
                 similarity = self.similarity_measure(user1_ratings, user2_ratings)
 
 
@@ -174,5 +175,6 @@ class NaiveUserCollaborativeFiltering(PredictionStrategy):
             return False
 
         return True
+
 
 
