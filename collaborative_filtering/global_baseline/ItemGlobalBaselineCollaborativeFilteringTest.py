@@ -1,16 +1,17 @@
 import unittest
 from unittest.mock import Mock
 
-from collaborative_filtering.lsh.UserLshCollaborativeFiltering import UserLshCollaborativeFiltering
-from FormulaFactory import FormulaFactory
+
+from collaborative_filtering.global_baseline.ItemGlobalBaselineCollaborativeFiltering import ItemGlobalBaselineCollaborativeFiltering
 
 
 import numpy as np
 
 from PredictionStrategy import PredictionStrategy
+from collaborative_filtering.RowPearsonSimilarityMatrix import RowPearsonSimilarityMatrix
 
 
-class TestUserCollaborativeFiltering(unittest.TestCase):
+class TestItemGlobalBaselineCollaborativeFiltering(unittest.TestCase):
 
     rating_matrix = np.array([
         [0, 3, 1, 0, 5, 2, 0, 0, 5],
@@ -36,12 +37,12 @@ class TestUserCollaborativeFiltering(unittest.TestCase):
         data_loader.get_rating_matrix_user_and_movie_index_translation_dict = Mock(return_value = (self.user_id_to_row, self.movie_id_to_col))
         data_loader.get_ratings_matrix = Mock(return_value = self.rating_matrix)
 
-        prediction_strategy: PredictionStrategy = UserLshCollaborativeFiltering(
-            k_neighbors=5,
-            signiture_length=4,
-            max_query_distance=16,
-            formula_factory=FormulaFactory(),
-            random_seed=3
+        sim_matrix_col = RowPearsonSimilarityMatrix(self.rating_matrix.T)
+
+
+        prediction_strategy: PredictionStrategy = ItemGlobalBaselineCollaborativeFiltering(
+            k_neighbors=2,
+            sim_matrix=sim_matrix_col
         )
 
 
@@ -50,11 +51,11 @@ class TestUserCollaborativeFiltering(unittest.TestCase):
         prediction_strategy.perform_precomputations()
 
         expected_prediction = {
-            (1, 1): 5.0,
-            (2, 1): 4.59,
-            (2, 2): 3.91,
-            (2, 8): 1.4,
-            (4, 5): 3.55
+            (1, 1): 3.35,
+            (2, 1): 4.2,
+            (2, 2): 3.71,
+            (2, 8): 1.34,
+            (4, 5): 4.16
         }
 
         actual_prediction = prediction_strategy.predict()
