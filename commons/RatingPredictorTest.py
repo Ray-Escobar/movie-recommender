@@ -1,16 +1,16 @@
 import unittest
 from unittest.mock import Mock
 
-from RatingPredictor import RatingPredictor
+from commons.RatingPredictor import RatingPredictor
 from collaborative_filtering.lsh.ItemLshCollaborativeFiltering import ItemLshCollaborativeFiltering
 from collaborative_filtering.lsh.UserLshCollaborativeFiltering import UserLshCollaborativeFiltering
 from data_handling.DiskPersistor import DiskPersistor
-from FormulaFactory import FormulaFactory
+from commons.FormulaFactory import FormulaFactory
 
 
 import numpy as np
 
-from PredictionStrategy import PredictionStrategy
+from commons.PredictionStrategy import PredictionStrategy
 
 
 class TestUserCollaborativeFiltering(unittest.TestCase):

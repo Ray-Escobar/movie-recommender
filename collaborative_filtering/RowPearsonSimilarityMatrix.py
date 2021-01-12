@@ -1,8 +1,6 @@
 from typing import List
 import numpy as np
 
-from FormulaFactory import FormulaFactory, SimilarityMeasureType
-
 
 class RowPearsonSimilarityMatrix:
     """

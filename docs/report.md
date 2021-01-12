@@ -36,6 +36,40 @@ Our approach was based on 2 directions, according to which we split our team:
 
 ### Collaborative Filtering
 
+For Naive and GlobalBaseline: 
+Weights: 0.3-0.7, 0.5-0.5, 0.7-0.3
+Number of neighbors: 5, 15, 30, 50
+
+LSH:
+Weights: 0.3-0.7, 0.5-0.5, 0.7-0.3
+Number of neighbors: 5, 15, 30, 50
+Distance measure: cosine / pearson
+
+Clustering:
+Sizes: (30%, 30%), (50%, 50%), (70%, 70%)
+Number of neighbors: 5, 15, 30, 50
+Number of samples: 10, 100, 1000
+
+We cannot test all possible combinations, but we can try a few
+to compare the influence of each parameter:
+
+Naive and GlobalBaseline:
+(0.3-0.7, 30), (0.5, 0.5, 30), (0.7-0.3, 30)
+(best, 5), (best, 15), (best, 30), (best, 50)
+
+LSH:
+(0.3-0.7, 30, cosine), (0.5, 0.5, 30, cosine), (0.7-0.3, 30, cosine)
+(best, 5, cosine), (best, 15, cosine), (best, 30, cosine), (best, 50, cosine)
+(best, best, cosine), (best, best, pearson)
+
+Clustering:
+((30%, 30%), 30, 100), ((50%, 50%), 30, 100), ((70%, 70%), 30, 100)
+(best, 5, 100), (best, 15, 100), (best, 30, 100), (best, 50, 100)
+(best, best, 10), (best, best, 100), (best, best, 1000)
+
+
+
+
 #### LSH
 Table with results for different parameters and weights.
 Discussion on how the different parameters affect the results.
@@ -59,8 +93,11 @@ Take the best result obtained by each method and compare it with the others.
 ### Latent Factors
 
 ### All Models Combined
-Run a final algorithm using all models. Justify the weights based on observed performance. 
+Run a final algorithm using all models. Choose the best individual parameters. Justify the weights based on observed performance. 
+Check it on kaggle.
 
 ## 4. Final Discussion and Conclusion
+
+Lecture graph with how
 
 

@@ -7,7 +7,7 @@ from collaborative_filtering.global_baseline.UserGlobalBaselineCollaborativeFilt
 
 import numpy as np
 
-from PredictionStrategy import PredictionStrategy
+from commons.PredictionStrategy import PredictionStrategy
 
 
 class TestUserGlobalBaselineCollaborativeFiltering(unittest.TestCase):

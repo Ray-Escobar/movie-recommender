@@ -7,7 +7,7 @@ from collaborative_filtering.global_baseline.ItemGlobalBaselineCollaborativeFilt
 
 import numpy as np
 
-from PredictionStrategy import PredictionStrategy
+from commons.PredictionStrategy import PredictionStrategy
 from collaborative_filtering.RowPearsonSimilarityMatrix import RowPearsonSimilarityMatrix
 
 

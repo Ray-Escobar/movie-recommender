@@ -7,7 +7,7 @@ from collaborative_filtering.RowPearsonSimilarityMatrix import RowPearsonSimilar
 
 import numpy as np
 
-from PredictionStrategy import PredictionStrategy
+from commons.PredictionStrategy import PredictionStrategy
 from collaborative_filtering.clustering.ClusterCollaborativeFiltering import ClusterCollaborativeFiltering
 
 
@@ -44,7 +44,7 @@ class TestItemCollaborativeFiltering(unittest.TestCase):
             k_neighbors=2,
             row_similarity_matrix=sim_matrix_row,
             col_similarity_matrix=sim_matrix_col,
-            new_dim=(3, 5)
+            new_dim_ratio=(3, 5)
         )
 
 

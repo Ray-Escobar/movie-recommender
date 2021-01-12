@@ -7,7 +7,7 @@ from collaborative_filtering.naive.UserNaiveCollaborativeFiltering import UserNa
 
 import numpy as np
 
-from PredictionStrategy import PredictionStrategy
+from commons.PredictionStrategy import PredictionStrategy
 
 
 class TestUserCollaborativeFiltering(unittest.TestCase):

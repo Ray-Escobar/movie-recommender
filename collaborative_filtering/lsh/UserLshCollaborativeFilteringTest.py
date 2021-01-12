@@ -2,12 +2,12 @@ import unittest
 from unittest.mock import Mock
 
 from collaborative_filtering.lsh.UserLshCollaborativeFiltering import UserLshCollaborativeFiltering
-from FormulaFactory import FormulaFactory
+from commons.FormulaFactory import FormulaFactory
 
 
 import numpy as np
 
-from PredictionStrategy import PredictionStrategy
+from commons.PredictionStrategy import PredictionStrategy
 
 
 class TestUserCollaborativeFiltering(unittest.TestCase):

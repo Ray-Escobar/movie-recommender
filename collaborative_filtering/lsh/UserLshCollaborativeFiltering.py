@@ -1,5 +1,5 @@
-from FormulaFactory import SimilarityMeasureType, FormulaFactory
-from PredictionStrategy import PredictionStrategy
+from commons.FormulaFactory import SimilarityMeasureType, FormulaFactory
+from commons.PredictionStrategy import PredictionStrategy
 from collaborative_filtering.Utils import predict_instances_based_on_predictor
 from collaborative_filtering.lsh.CosineDistanceLsh import CosineDistanceLsh
 from collaborative_filtering.lsh.LocalitySensitiveHashTable import LocalitySensitiveHashTable

@@ -1,4 +1,4 @@
-from PredictionStrategy import PredictionStrategy
+from commons.PredictionStrategy import PredictionStrategy
 from collaborative_filtering.Utils import predict_instances_based_on_predictor
 from collaborative_filtering.global_baseline.GlobalBaselineCollaborativeFilteringPredictor import \
     GlobalBaselineCollaborativeFilteringPredictor

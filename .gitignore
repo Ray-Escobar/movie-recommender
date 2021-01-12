@@ -152,4 +152,5 @@ fabric.properties
 
 # the used data
 data/*
+evaluation_reports/*
 persistence/*

@@ -1,7 +1,6 @@
 from typing import Tuple
 
-from PredictionStrategy import PredictionStrategy
-import numpy as np
+from commons.PredictionStrategy import PredictionStrategy
 
 from collaborative_filtering.RowPearsonSimilarityMatrix import RowPearsonSimilarityMatrix
 from collaborative_filtering.Utils import predict_instances_based_on_predictor
@@ -9,10 +8,17 @@ from collaborative_filtering.clustering.ClusteringPredictor import ClusteringPre
 
 
 class ClusterCollaborativeFiltering(PredictionStrategy):
-    def __init__(self, row_similarity_matrix: RowPearsonSimilarityMatrix, col_similarity_matrix: RowPearsonSimilarityMatrix, new_dim: Tuple[int, int], k_neighbors: int, randomized: bool = False, randomized_num_extractions: int = 100, random_seed: int = 3):
+    def __init__(self, row_similarity_matrix: RowPearsonSimilarityMatrix, col_similarity_matrix: RowPearsonSimilarityMatrix, new_dim_ratio: Tuple[float, float], k_neighbors: int, randomized: bool = False, randomized_num_extractions: int = 100, random_seed: int = 3):
         self.row_similarity_matrix = row_similarity_matrix.get_matrix()
         self.col_similarity_matrix = col_similarity_matrix.get_matrix()
-        self.new_dim = new_dim
+
+        # compute the actual new dimensions
+        # num rows
+        new_dim_num_rows = int(new_dim_ratio[0] * self.row_similarity_matrix.shape[0])
+        new_dim_num_cols = int(new_dim_ratio[1] * self.col_similarity_matrix.shape[0])
+        self.new_dim = (new_dim_num_rows, new_dim_num_cols)
+
+
         self.k_neighbors = k_neighbors
         self.randomized = randomized
         self.randomized_num_extractions = randomized_num_extractions

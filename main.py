@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from typing import List
 
-from RatingPredictor import RatingPredictor
+from commons.RatingPredictor import RatingPredictor
 from collaborative_filtering.RowPearsonSimilarityMatrix import RowPearsonSimilarityMatrix
 from collaborative_filtering.clustering.ClusterCollaborativeFiltering import ClusterCollaborativeFiltering
 from collaborative_filtering.global_baseline.ItemGlobalBaselineCollaborativeFiltering import \
@@ -13,7 +13,7 @@ from collaborative_filtering.naive.UserNaiveCollaborativeFiltering import UserNa
 from data_handling.DataLoader import DataLoader
 from data_handling.DataPathProvider import DataPathProvider
 from data_handling.DiskPersistor import DiskPersistor
-from FormulaFactory import FormulaFactory
+from commons.FormulaFactory import FormulaFactory
 from data_handling.LocalFileCsvProvider import LocalFileCsvProvider
 
 """
@@ -42,7 +42,7 @@ movies_file = './data/movies.csv'
 users_file = './data/users.csv'
 ratings_file = './data/ratings.csv'
 predictions_file = './data/predictions.csv'
-submission_file = './data/submission.csv'
+submission_file = 'data/submissions/submission.csv'
 
 # Create a data path provider
 data_path_provider = DataPathProvider(movies_path=movies_file, users_path=users_file, ratings_path=ratings_file, predictions_path=predictions_file, submission_path=submission_file)
@@ -118,7 +118,7 @@ naive_colab_predictor: RatingPredictor = RatingPredictor(
     ]
 )
 
-predict_and_write_to_file(naive_colab_predictor, True, [0.7, 0.3], './data/naive_colab.csv')
+predict_and_write_to_file(naive_colab_predictor, True, [0.7, 0.3], 'data/submissions/naive_colab.csv')
 
 
 # Clustering Collaborative Filtering
@@ -130,7 +130,7 @@ clustering_predictor: RatingPredictor = RatingPredictor(
         ClusterCollaborativeFiltering(
             row_similarity_matrix=global_pearson_similarity_matrix_user,
             col_similarity_matrix=global_pearson_similarity_matrix_movie,
-            new_dim=(2500, 2500),
+            new_dim_ratio=(0.8, 0.8),
             k_neighbors=35,
             randomized=True,
             randomized_num_extractions=1000,
@@ -139,7 +139,7 @@ clustering_predictor: RatingPredictor = RatingPredictor(
     ]
 )
 
-predict_and_write_to_file(clustering_predictor, True, [1], './data/clustering.csv')
+predict_and_write_to_file(clustering_predictor, True, [1], 'data/submissions/clustering.csv')
 
 
 # User - user and item - item baseline collaborative filtering
@@ -160,4 +160,4 @@ global_baseline_predictor: RatingPredictor = RatingPredictor(
     ]
 )
 
-predict_and_write_to_file(global_baseline_predictor, True, [0.7, 0.3], './data/global_baselines.csv')
+predict_and_write_to_file(global_baseline_predictor, True, [0.7, 0.3], 'data/submissions/global_baselines.csv')
