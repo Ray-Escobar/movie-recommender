@@ -74,6 +74,8 @@ def generate_prediction_report(report_name: str, predictor_descriptors: List[dic
 
     with open('{}/{}.json'.format(EVALUATION_REPORTS_DIR, report_name), 'w') as report:
 
+        global_json = dict()
+
         for i, descriptor in enumerate(predictor_descriptors):
             score = scores[i]
 
@@ -82,7 +84,10 @@ def generate_prediction_report(report_name: str, predictor_descriptors: List[dic
                 'Description': descriptor['description'],
                 'Estimated RMSE Score': score
             }
-            report.write(json.dumps(description, indent=4))
+
+            global_json['report_' + str(i)] = description
+
+        report.write(json.dumps(global_json, indent=4))
 
 
 
