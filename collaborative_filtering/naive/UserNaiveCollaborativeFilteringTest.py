@@ -7,10 +7,10 @@ from collaborative_filtering.naive.UserNaiveCollaborativeFiltering import UserNa
 
 import numpy as np
 
-from PredictionStrategy import PredictionStrategy
+from commons.PredictionStrategy import PredictionStrategy
 
 
-class TestItemCollaborativeFiltering(unittest.TestCase):
+class TestUserCollaborativeFiltering(unittest.TestCase):
 
     rating_matrix = np.array([
         [0, 3, 1, 0, 5, 2, 0, 0, 5],

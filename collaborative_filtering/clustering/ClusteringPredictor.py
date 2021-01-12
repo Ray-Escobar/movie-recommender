@@ -2,12 +2,13 @@ from typing import Tuple
 
 import numpy as np
 
+from collaborative_filtering.Predictor import Predictor
 from collaborative_filtering.naive.NaiveCollaborativeFilteringPredictor import NaiveCollaborativeFilteringPredictor
 from collaborative_filtering.RowPearsonSimilarityMatrix import RowPearsonSimilarityMatrix
 from collaborative_filtering.clustering.MatrixDimensionalityReducer import MatrixDimensionalityReducer
 
 
-class ClusteringPredictor:
+class ClusteringPredictor(Predictor):
     def __init__(self, data_matrix: np.array, row_similarity_matrix: np.array, col_similarity_matrix: np.array, new_dim: Tuple[int, int], k_neighbors: int, randomized: bool = False, randomized_num_extractions: int = 100, random_seed: int = 3):
         self.data_matrix = data_matrix
         self.row_similarity_matrix = row_similarity_matrix

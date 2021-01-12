@@ -2,12 +2,12 @@ import unittest
 from unittest.mock import Mock
 
 from collaborative_filtering.lsh.UserLshCollaborativeFiltering import UserLshCollaborativeFiltering
-from FormulaFactory import FormulaFactory
+from commons.FormulaFactory import FormulaFactory
 
 
 import numpy as np
 
-from PredictionStrategy import PredictionStrategy
+from commons.PredictionStrategy import PredictionStrategy
 
 
 class TestUserCollaborativeFiltering(unittest.TestCase):
@@ -50,7 +50,7 @@ class TestUserCollaborativeFiltering(unittest.TestCase):
         prediction_strategy.perform_precomputations()
 
         expected_prediction = {
-            (1, 1): 0.0,
+            (1, 1): 5.0,
             (2, 1): 4.59,
             (2, 2): 3.91,
             (2, 8): 1.4,

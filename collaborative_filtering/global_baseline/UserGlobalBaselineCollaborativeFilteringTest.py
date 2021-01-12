@@ -1,17 +1,16 @@
 import unittest
 from unittest.mock import Mock
 
-
 from collaborative_filtering.RowPearsonSimilarityMatrix import RowPearsonSimilarityMatrix
+from collaborative_filtering.global_baseline.UserGlobalBaselineCollaborativeFiltering import UserGlobalBaselineCollaborativeFiltering
 
 
 import numpy as np
 
 from commons.PredictionStrategy import PredictionStrategy
-from collaborative_filtering.clustering.ClusterCollaborativeFiltering import ClusterCollaborativeFiltering
 
 
-class TestItemCollaborativeFiltering(unittest.TestCase):
+class TestUserGlobalBaselineCollaborativeFiltering(unittest.TestCase):
 
     rating_matrix = np.array([
         [0, 3, 1, 0, 5, 2, 0, 0, 5],
@@ -38,13 +37,11 @@ class TestItemCollaborativeFiltering(unittest.TestCase):
         data_loader.get_ratings_matrix = Mock(return_value = self.rating_matrix)
 
         sim_matrix_row = RowPearsonSimilarityMatrix(self.rating_matrix)
-        sim_matrix_col = RowPearsonSimilarityMatrix(self.rating_matrix.T)
 
-        prediction_strategy: PredictionStrategy = ClusterCollaborativeFiltering(
+
+        prediction_strategy: PredictionStrategy = UserGlobalBaselineCollaborativeFiltering(
             k_neighbors=2,
-            row_similarity_matrix=sim_matrix_row,
-            col_similarity_matrix=sim_matrix_col,
-            new_dim_ratio=(3, 5)
+            sim_matrix=sim_matrix_row
         )
 
 
@@ -53,11 +50,11 @@ class TestItemCollaborativeFiltering(unittest.TestCase):
         prediction_strategy.perform_precomputations()
 
         expected_prediction = {
-            (1, 1): 3.0,
-            (2, 1): 3.0,
-            (2, 2): 3.0,
-            (2, 8): 1.0,
-            (4, 5): 3.0
+            (1, 1): 4.97,
+            (2, 1): 4.52,
+            (2, 2): 3.84,
+            (2, 8): 1.34,
+            (4, 5): 3.6
         }
 
         actual_prediction = prediction_strategy.predict()

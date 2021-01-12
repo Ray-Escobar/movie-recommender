@@ -1,10 +1,11 @@
 import numpy as np
 
-from FormulaFactory import FormulaFactory, SimilarityMeasureType
+from commons.FormulaFactory import FormulaFactory, SimilarityMeasureType
+from collaborative_filtering.Predictor import Predictor
 from collaborative_filtering.lsh.LocalitySensitiveHashTable import LocalitySensitiveHashTable
 
 
-class LshCollaborativeFilteringPredictor:
+class LshCollaborativeFilteringPredictor(Predictor):
     def __init__(self, data_matrix: np.array, k_neighbors: int, max_query_distance: int, formula_type: SimilarityMeasureType, lsh_table: LocalitySensitiveHashTable,
                  formula_factory: FormulaFactory):
         """

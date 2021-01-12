@@ -1,7 +1,7 @@
 from typing import List
 
 from data_handling.DataLoader import DataLoader
-from PredictionStrategy import PredictionStrategy
+from commons.PredictionStrategy import PredictionStrategy
 from data_handling.DiskPersistor import DiskPersistor
 import numpy as np
 
