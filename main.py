@@ -2,16 +2,13 @@
 from typing import List
 
 from RatingPredictor import RatingPredictor
-from collaborative_filtering.CosineLshUserCollaborativeFiltering import CosineLshUserCollaborativeFiltering
-from collaborative_filtering.ItemLshCollaborativeFiltering import ItemLshCollaborativeFiltering
-from collaborative_filtering.UserLshCollaborativeFiltering import UserLshCollaborativeFiltering
+from collaborative_filtering.RowPearsonSimilarityMatrix import RowPearsonSimilarityMatrix
+from collaborative_filtering.clustering.ClusterCollaborativeFiltering import ClusterCollaborativeFiltering
 from data_handling.DataLoader import DataLoader
 from data_handling.DataPathProvider import DataPathProvider
 from data_handling.DiskPersistor import DiskPersistor
-from FormulaFactory import SimilarityMeasureType, FormulaFactory
+from FormulaFactory import FormulaFactory
 from data_handling.LocalFileCsvProvider import LocalFileCsvProvider
-from collaborative_filtering.NaiveUserCollaborativeFiltering import NaiveUserCollaborativeFiltering
-from PredictionStrategy import PredictionStrategy
 
 """
 FRAMEWORK FOR DATAMINING CLASS
@@ -39,7 +36,7 @@ movies_file = './data/movies.csv'
 users_file = './data/users.csv'
 ratings_file = './data/ratings.csv'
 predictions_file = './data/predictions.csv'
-submission_file = './data/submission.csv'
+submission_file = './data/submission_clustering.csv'
 
 # Create a data path provider
 data_path_provider = DataPathProvider(movies_path=movies_file, users_path=users_file, ratings_path=ratings_file, predictions_path=predictions_file, submission_path=submission_file)
@@ -48,6 +45,16 @@ data_path_provider = DataPathProvider(movies_path=movies_file, users_path=users_
 data_loader = DataLoader(data_path_provider=data_path_provider, csv_provider=LocalFileCsvProvider())
 disk_persistor = DiskPersistor()
 formula_factory = FormulaFactory()
+
+# Create the user similarity matrix matrix if not already created
+sym_matrix_results = disk_persistor.perist_computation([
+    (lambda: RowPearsonSimilarityMatrix(data_loader.get_ratings_matrix()), 'global_pearson_similarity_matrix'),
+    (lambda: RowPearsonSimilarityMatrix(data_loader.get_ratings_matrix().T), 'global_pearson_similarity_matrix_movie')
+], force_update=False)
+
+global_pearson_similarity_matrix_user = sym_matrix_results[0]
+global_pearson_similarity_matrix_movie = sym_matrix_results[1]
+
 
 
 
@@ -60,24 +67,38 @@ formula_factory = FormulaFactory()
 #
 #print(ratings_matrix)
 
+# User - user and item - item collaborative filtering
+
+# predictor: RatingPredictor = RatingPredictor(
+#     data_loader=data_loader,
+#     disk_persistor=disk_persistor,
+#     persistence_id='predictor_naive',
+#     prediction_strategies=[
+#         ItemNaiveCollaborativeFiltering(
+#             k_neighbors=30,
+#             sim_matrix=global_pearson_similarity_matrix_movie
+#         ),
+#         UserNaiveCollaborativeFiltering(
+#             k_neighbors=30,
+#             sim_matrix=global_pearson_similarity_matrix_user
+#         )
+#     ]
+# )
+
+# Clustering Collaborative Filtering
 predictor: RatingPredictor = RatingPredictor(
     data_loader=data_loader,
     disk_persistor=disk_persistor,
-    persistence_id='predictor',
+    persistence_id='predictor_clustering',
     prediction_strategies=[
-        ItemLshCollaborativeFiltering(
-            k_neighbors=30,
-            signiture_length=20,
-            max_query_distance=5000,
-            formula_factory=formula_factory,
-            random_seed=4,
-        ),
-        UserLshCollaborativeFiltering(
-            k_neighbors=30,
-            signiture_length=20,
-            max_query_distance=5000,
-            formula_factory=formula_factory,
-            random_seed=4,
+        ClusterCollaborativeFiltering(
+            row_similarity_matrix=global_pearson_similarity_matrix_user,
+            col_similarity_matrix=global_pearson_similarity_matrix_movie,
+            new_dim=(2000, 2000),
+            k_neighbors=35,
+            randomized=True,
+            randomized_num_extractions=2000,
+            random_seed=3
         )
     ]
 )
@@ -101,7 +122,7 @@ def predict(predictor: RatingPredictor, force_update: bool, weights: List[float]
 #####
 
 ## //!!\\ TO CHANGE by your prediction function
-predictions = predict(predictor, False, [0.7, 0.3])
+predictions = predict(predictor, True, [0.7, 0.3])
 
 # Save predictions, should be in the form 'list of tuples' or 'list of lists'
 with open(submission_file, 'w') as submission_writer:

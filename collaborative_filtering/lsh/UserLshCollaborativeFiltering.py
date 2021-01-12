@@ -1,11 +1,11 @@
-from FormulaFactory import FormulaFactory, SimilarityMeasureType
+from FormulaFactory import SimilarityMeasureType, FormulaFactory
 from PredictionStrategy import PredictionStrategy
-from collaborative_filtering.CosineDistanceLsh import CosineDistanceLsh
-from collaborative_filtering.LocalitySensitiveHashTable import LocalitySensitiveHashTable
-from collaborative_filtering.LshCollaborativeFilteringPredictor import LshCollaborativeFilteringPredictor
+from collaborative_filtering.lsh.CosineDistanceLsh import CosineDistanceLsh
+from collaborative_filtering.lsh.LocalitySensitiveHashTable import LocalitySensitiveHashTable
+from collaborative_filtering.lsh.LshCollaborativeFilteringPredictor import LshCollaborativeFilteringPredictor
 
 
-class ItemLshCollaborativeFiltering(PredictionStrategy):
+class UserLshCollaborativeFiltering(PredictionStrategy):
     def __init__(self, k_neighbors: int, signiture_length: int, max_query_distance: int,
                  formula_factory: FormulaFactory, random_seed: int, cosine_similarity_type: SimilarityMeasureType = SimilarityMeasureType.MEANLESS_COSINE_SIMILARITY):
 
@@ -19,9 +19,7 @@ class ItemLshCollaborativeFiltering(PredictionStrategy):
     def perform_precomputations(self):
         PredictionStrategy.perform_precomputations(self)
 
-        # Since we are compairing items, we need to use the transverse of the ratings matrix
         self.ratings_matrix = self.data_loader.get_ratings_matrix()
-        self.ratings_matrix = self.ratings_matrix.T
 
         self.user_id_vector, self.movie_id_vector = self.data_loader.get_rating_matrix_user_and_movie_data()
         self.user_id_to_row_dict, self.movie_id_to_col_dict = self.data_loader.get_rating_matrix_user_and_movie_index_translation_dict()
@@ -42,9 +40,11 @@ class ItemLshCollaborativeFiltering(PredictionStrategy):
 
             self.lsh_table: LocalitySensitiveHashTable = results[0]
 
+
         # init the lsh predictor
         self.predictor = LshCollaborativeFilteringPredictor(self.ratings_matrix, self.k_neighbors, self.max_query_distance,
-                                                            self.cosine_similarity_type, self.lsh_table, self.formula_factory)
+                                                            self.cosine_similarity_type,
+                                                            self.lsh_table, self.formula_factory)
 
 
     def predict(self):
@@ -75,8 +75,11 @@ class ItemLshCollaborativeFiltering(PredictionStrategy):
             num_prediction += 1
             print('Progress {} / {}'.format(num_prediction, predictions_num))
 
-            row = self.movie_id_to_col_dict[movie_id]
-            column = self.user_id_to_row_dict[user_id]
+
+
+            row = self.user_id_to_row_dict[user_id]
+            column = self.movie_id_to_col_dict[movie_id]
+
 
             rating = self.predictor.predict(row, column)
 

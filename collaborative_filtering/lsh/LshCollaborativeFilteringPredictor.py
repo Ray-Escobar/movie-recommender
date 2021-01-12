@@ -1,7 +1,7 @@
 import numpy as np
 
 from FormulaFactory import FormulaFactory, SimilarityMeasureType
-from collaborative_filtering.LocalitySensitiveHashTable import LocalitySensitiveHashTable
+from collaborative_filtering.lsh.LocalitySensitiveHashTable import LocalitySensitiveHashTable
 
 
 class LshCollaborativeFilteringPredictor:

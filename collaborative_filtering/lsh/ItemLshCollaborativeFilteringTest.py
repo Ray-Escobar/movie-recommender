@@ -1,10 +1,7 @@
 import unittest
 from unittest.mock import Mock
 
-from collaborative_filtering.CosineLshUserCollaborativeFiltering import CosineLshUserCollaborativeFiltering
-from collaborative_filtering.ItemLshCollaborativeFiltering import ItemLshCollaborativeFiltering
-from collaborative_filtering.UserLshCollaborativeFiltering import UserLshCollaborativeFiltering
-from data_handling.DiskPersistor import DiskPersistor
+from collaborative_filtering.lsh.ItemLshCollaborativeFiltering import ItemLshCollaborativeFiltering
 from FormulaFactory import FormulaFactory
 
 
@@ -13,7 +10,7 @@ import numpy as np
 from PredictionStrategy import PredictionStrategy
 
 
-class TestUserCollaborativeFiltering(unittest.TestCase):
+class TestItemCollaborativeFiltering(unittest.TestCase):
 
     rating_matrix = np.array([
         [0, 3, 1, 0, 5, 2, 0, 0, 5],
@@ -39,10 +36,10 @@ class TestUserCollaborativeFiltering(unittest.TestCase):
         data_loader.get_rating_matrix_user_and_movie_index_translation_dict = Mock(return_value = (self.user_id_to_row, self.movie_id_to_col))
         data_loader.get_ratings_matrix = Mock(return_value = self.rating_matrix)
 
-        prediction_strategy: PredictionStrategy = UserLshCollaborativeFiltering(
+        prediction_strategy: PredictionStrategy = ItemLshCollaborativeFiltering(
             k_neighbors=5,
-            signiture_length=4,
-            max_query_distance=16,
+            signiture_length=5,
+            max_query_distance=10,
             formula_factory=FormulaFactory(),
             random_seed=3
         )
@@ -53,11 +50,11 @@ class TestUserCollaborativeFiltering(unittest.TestCase):
         prediction_strategy.perform_precomputations()
 
         expected_prediction = {
-            (1, 1): 0.0,
-            (2, 1): 4.59,
-            (2, 2): 3.91,
-            (2, 8): 1.4,
-            (4, 5): 3.55
+            (1, 1): 2.435,
+            (2, 1): 2.636,
+            (2, 2): 2.255,
+            (2, 8): 2.0,
+            (4, 5): 4.0
         }
 
         actual_prediction = prediction_strategy.predict()

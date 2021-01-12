@@ -1,20 +1,21 @@
-from FormulaFactory import SimilarityMeasureType, FormulaFactory
+from typing import Tuple
+
 from PredictionStrategy import PredictionStrategy
-from collaborative_filtering.CosineDistanceLsh import CosineDistanceLsh
-from collaborative_filtering.LocalitySensitiveHashTable import LocalitySensitiveHashTable
-from collaborative_filtering.LshCollaborativeFilteringPredictor import LshCollaborativeFilteringPredictor
+import numpy as np
+
+from collaborative_filtering.RowPearsonSimilarityMatrix import RowPearsonSimilarityMatrix
+from collaborative_filtering.clustering.ClusteringPredictor import ClusteringPredictor
 
 
-class UserLshCollaborativeFiltering(PredictionStrategy):
-    def __init__(self, k_neighbors: int, signiture_length: int, max_query_distance: int,
-                 formula_factory: FormulaFactory, random_seed: int, cosine_similarity_type: SimilarityMeasureType = SimilarityMeasureType.MEANLESS_COSINE_SIMILARITY):
-
-        self.signiture_length = signiture_length
+class ClusterCollaborativeFiltering(PredictionStrategy):
+    def __init__(self, row_similarity_matrix: RowPearsonSimilarityMatrix, col_similarity_matrix: RowPearsonSimilarityMatrix, new_dim: Tuple[int, int], k_neighbors: int, randomized: bool = False, randomized_num_extractions: int = 100, random_seed: int = 3):
+        self.row_similarity_matrix = row_similarity_matrix.get_matrix()
+        self.col_similarity_matrix = col_similarity_matrix.get_matrix()
+        self.new_dim = new_dim
         self.k_neighbors = k_neighbors
-        self.max_query_distance = max_query_distance
-        self.formula_factory = formula_factory
+        self.randomized = randomized
+        self.randomized_num_extractions = randomized_num_extractions
         self.random_seed = random_seed
-        self.cosine_similarity_type = cosine_similarity_type
 
     def perform_precomputations(self):
         PredictionStrategy.perform_precomputations(self)
@@ -24,32 +25,13 @@ class UserLshCollaborativeFiltering(PredictionStrategy):
         self.user_id_vector, self.movie_id_vector = self.data_loader.get_rating_matrix_user_and_movie_data()
         self.user_id_to_row_dict, self.movie_id_to_col_dict = self.data_loader.get_rating_matrix_user_and_movie_index_translation_dict()
 
-        self.lsh_table = None
+        self.predictor = ClusteringPredictor(self.ratings_matrix, self.row_similarity_matrix, self.col_similarity_matrix, self.new_dim, self.k_neighbors, self.randomized, self.randomized_num_extractions, self.random_seed)
 
-        if self.disk_persistor is None:
-
-            self.lsh_table: LocalitySensitiveHashTable = \
-                CosineDistanceLsh(self.ratings_matrix, self.signiture_length, self.random_seed)
-
-        else:
-            results = self.disk_persistor.perist_computation(
-                computations=[(lambda: CosineDistanceLsh(self.ratings_matrix, self.signiture_length, self.random_seed),
-                               self.persistence_id)],
-                force_update=self.force_update
-            )
-
-            self.lsh_table: LocalitySensitiveHashTable = results[0]
-
-
-        # init the lsh predictor
-        self.predictor = LshCollaborativeFilteringPredictor(self.ratings_matrix, self.k_neighbors, self.max_query_distance,
-                                                            self.cosine_similarity_type,
-                                                            self.lsh_table, self.formula_factory)
-
+        self.predictor.perform_precomputations()
 
     def predict(self):
         """
-        Makes predictions based on user-user collaborative filtering.
+        Makes predictions based on clustering collaborative filtering.
         """
         PredictionStrategy.predict(self)
         return self.__predict(self.user_movie_instances_to_be_predicted)
@@ -75,11 +57,8 @@ class UserLshCollaborativeFiltering(PredictionStrategy):
             num_prediction += 1
             print('Progress {} / {}'.format(num_prediction, predictions_num))
 
-
-
             row = self.user_id_to_row_dict[user_id]
             column = self.movie_id_to_col_dict[movie_id]
-
 
             rating = self.predictor.predict(row, column)
 
