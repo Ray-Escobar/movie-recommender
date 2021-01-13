@@ -56,9 +56,6 @@ class FormulaFactory:
 
             return sub_mean(vec)
 
-
-
-
         cosine_similarity = self.create_cosine_similarity_measure()
 
         return lambda vec_x, vec_y: cosine_similarity(make_meanless(vec_x), make_meanless(vec_y))
@@ -74,11 +71,9 @@ class FormulaFactory:
 
             #square the matrix, sum the rows, sum the vectors, divide by
             # number of non-zero-entries and take the square root
-            return np.sqrt((np.square(sum_matrix)).sum(axis = 1).sum()/self.number_of_values)
+            return np.sqrt((np.square(sum_matrix)).sum(axis = 1).sum()/n)
 
         return take_rmse_score
-
-    
 
     def create_similarity_measure(self, similarity_measure_type: SimilarityMeasureType):
         """

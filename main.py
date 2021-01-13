@@ -15,6 +15,8 @@ from FormulaFactory import SimilarityMeasureType, ScoringMeasureType, FormulaFac
 from data_handling.LocalFileCsvProvider import LocalFileCsvProvider
 from collaborative_filtering.NaiveUserCollaborativeFiltering import NaiveUserCollaborativeFiltering
 from matrix_factorization.UvDecomposition import UvDecomposer
+from matrix_factorization.BiasUvDecomposition import BiasUvDecomposer
+from matrix_factorization.RegularizedUvDecompositon import RegularizedUvDecomposer
 from PredictionStrategy import PredictionStrategy
 
 """
@@ -69,13 +71,25 @@ predictor: RatingPredictor = RatingPredictor(
     disk_persistor=disk_persistor,
     persistence_id='predictor',
     prediction_strategies=[
-        UvDecomposer(
-            d = 5,
-            delta = 1,
-            iterations = 100,
+        BiasUvDecomposer(
+            d = 100,
+            mu = 0.0005,
+            delta1 = 1.7,
+            delta2 = 1.7,
+            iterations = 1,
             formula_factory=formula_factory,
-            scorer_type= ScoringMeasureType.TRUE_RMSE
-        )
+            scorer_type= ScoringMeasureType.TRUE_RMSE,
+            bias_weight= 1
+        ),   
+        RegularizedUvDecomposer(
+            d = 100,
+            mu = 0.0005,
+            delta1= 1.7,
+            delta2= 1.7,
+            iterations = 1,
+            formula_factory=formula_factory,
+            scorer_type= ScoringMeasureType.TRUE_RMSE,
+        )   
     ]
 )
 
@@ -97,10 +111,12 @@ prediction_strategies=[
             random_seed=4,
         ),
         UvDecomposer(
-            d = 5,
-            delta = 1,
-            iterations = 100,
-            formula_factory=formula_factory
+            d = 100,
+            delta = 0.0005,
+            regul= 1.7,
+            iterations = 50,
+            formula_factory=formula_factory,
+            scorer_type= ScoringMeasureType.TRUE_RMSE
         )
     ]
 '''
@@ -125,7 +141,7 @@ def predict(predictor: RatingPredictor, force_update: bool, weights: List[float]
 
 ## //!!\\ TO CHANGE by your prediction function
 #predictions = predict(predictor, False, [0.7, 0.3])
-predictions = predict(predictor, False, [1])
+predictions = predict(predictor, False, [0.5, 0.5])
 
 # Save predictions, should be in the form 'list of tuples' or 'list of lists'
 with open(submission_file, 'w') as submission_writer:

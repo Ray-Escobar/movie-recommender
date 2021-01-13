@@ -1,5 +1,5 @@
 import numpy as np
-
+import math
 import sys
 
 sys.path.append('.')
@@ -9,62 +9,20 @@ from data_handling.DataLoader import DataLoader
 from PredictionStrategy import PredictionStrategy
 from matrix_factorization import MatrixNormalize
 
-class UvDecomposer():
+class UvDecomposer(PredictionStrategy):
     """
     Makes predictions by performing an UV decomposition on the provided matrix
     """
 
-    def __init__(self, d:int, iterations:int, delta:float, formula_factory:FormulaFactory,scorer_type: ScoringMeasureType):
+    def __init__(self, d:int, iterations:int, mu:float, formula_factory:FormulaFactory,scorer_type: ScoringMeasureType):
 
         # d cant be 1 or less
         assert(d > 1)
         
         self.d = d                      #dimensions of the thin part
-        self.delta = delta              #speed of descent
+        self.mu = mu              #speed of descent
         self.iterations = iterations    #number of iterations to go for
         self.scoring_measure = formula_factory.create_scoring_measure(scoring_measure_type=scorer_type)
-        
-
-    def add_data_loader(self, data_loader: DataLoader):
-
-        PredictionStrategy.add_data_loader(self, data_loader)
-
-        # vectors encoding the user ids and movie ids for each rows and columns
-        #self.user_id_data, self.movie_id_data = self.data_loader.get_rating_matrix_user_and_movie_data()
-
-        # dictionaries translating from user ids to rows and movie ids to columns
-        self.user_id_to_row, self.movie_id_to_column = self.data_loader.get_rating_matrix_user_and_movie_index_translation_dict()
-
-
-        # load the ratings matrix
-        self.ratings_matrix = self.data_loader.get_ratings_matrix()
-
-        #d can't be greater than the dimensions of M
-        assert(self.d < len(self.ratings_matrix) and self.d < len(self.ratings_matrix[0]))
-
-        #Find the zero values
-        self.zero_values = np.where(self.ratings_matrix == 0)  #find the undefined values
-
-        #Return normalized matrix M, and the avg_usr and avg_item vectors
-        print("normalizing matrix now")
-        self.M, self.avg_users, self.avg_items = MatrixNormalize.normalize(self.ratings_matrix, self.zero_values)
-
-
-        #Create U and V
-        #   M us a n x m matrix
-        #   U is a n x d matrix
-        #   V is a d x m matrix
-        
-        #Note: since M is normalized we create 0 matrices since sqrt(avg/d) is always 0
-        # and for randomness move them around with uniform
-        # variable U(-1,1) with this formula: (b - a) * random((len(row), len(col))) + a
-
-        rng = np.random.default_rng()
-        self.U = 2 * rng.random((len(self.M[0]), d)) -1
-        self.V = 2 * rng.random((d, len(self.M)))    -1
-
-        self.number_of_values = len(self.M) * len(self.M[0]) - len(self.zero_values)
-
 
     def get_prediction_matrix(self) -> (np.array):
         """
@@ -82,13 +40,13 @@ class UvDecomposer():
 
         return predictions
 
-    def get_predictions(self, user_row:int, item_col:int) -> dict:
+    def __predict_score(self, user_row:int, item_col:int) -> dict:
         """
         Get the prediction for the user and movie
 
         :return: prediction matrix
         """
-        return self.predictions[user_row][item_col] + ((self.avg_users[user_row] + self.avg_items[item_col])/2)
+        return self.predictions[user_row][item_col] #+ ((self.avg_users[user_row] + self.avg_items[item_col])/2)
 
     def score(self) -> (float):
         """
@@ -106,96 +64,56 @@ class UvDecomposer():
         :param iterations: numer of iterations to run 
         """
 
-        #randomly choosing rows
-        row_values = np.arange(len(self.U))
-        np.random.shuffle(row_values)
-
-        #randomly choosing columns
-        col_values = np.arange(self.d)
-        np.random.shuffle(col_values)
+        indices = np.nonzero(self.M)
 
         #Gradient descent process for k iterations
         for k in range(self.iterations):
-            for i in row_values:
-                for j in col_values:
-                    self.__decompose_matrix_u(i, j)
-                    self.__decompose_matrix_v(j, i)
+            for row, col in zip(indices[0], indices[1]):
+                self.decompose_matrices(row, col)
             print("Iteration " + str(k+1) + ": Score => " ,self.score())        
 
         self.predictions = np.matmul(self.U, self.V) #generate the predictions
 
 
-    def __decompose_matrix_u(self, row:int, col:int):
+
+    def decompose_matrices(self, row:int, col:int):
         """
-        Perfoms the decompostion to optimize matrix U 
-        on a given x value on the matrix
-
-        :param row: row where x value is
-        :param col: column where the x vallue is
+        Methods have to implement this function
         """
+        raise Exception('You must define a decompose matrices function')
 
-        m_rj = self.M[row]            #get the respective row
-        zeroes = np.where(m_rj == 0)  #find the zeroes to ignore them
+        #gradient = 2*(self.M[row][col] - np.dot(self.U[row], self.V[:,col]))
+        #self.U[row]   = self.U[row]   + self.mu*(gradient*self.V[:,col] - self.regul * self.U[row]  )
+        #self.V[:,col] = self.V[:,col] + self.mu*(gradient*self.U[row]   - self.regul * self.V[:,col])
 
-        #Denominator of the equation
-        denom         = np.square(self.V[col]) #col == d
-        denom[zeroes] = 0
-        denom         = denom.sum()
-        
-        row_u = np.copy(self.U[row])    #get the row of U
-        row_u[col] = 0                  #where the variable is located we set it to 0
-
-        #Now we get the sum of multipling the selected u_row with the transpose
-        sums = (row_u * self.V.transpose())
-        
-        #substract from its respective m_rj
-        sums = sums.sum(axis=1)
-        sums[zeroes[0]] = 0
-        sums = m_rj - sums
-
-
-        #Numerator of the equation#
-        numer = (self.V[col] * sums).sum()   #multply row elements with sums, and sum it together
-
-        self.U[row][col] = numer / denom
-
-    def __decompose_matrix_v(self, row:int, col:int):
-        """
-        Perfoms the decompostion to optimize matrix V 
-        on a given y value on the matrix
-
-        :param row: row where y value is
-        :param col: column where the y vallue is
-        """
-
-        m_is = self.M[:,col]           #get the respective col
-        zeroes = np.where(m_is == 0)   #find the zeroes to ignore them
-
-        denom         = np.square(self.U[:,row])  ## row == d
-        denom[zeroes] = 0
-        denom         = denom.sum()
-
-        v_col = np.copy(self.V[:,col])     #get the respective row of v
-        v_col[row] = 0
-
-        #Now we get the sum of multipling the selected v_col with the U
-        sums = (v_col * self.U) 
-
-        #substract from its respective m_is
-        sums = sums.sum(axis=1)
-        sums[zeroes[0]] = 0
-        sums = m_is - sums
-        
-        numer = (self.U[:,row]*sums).sum()
-        
-        self.V[row][col] = delta*(numer / denom)
 
     def perform_precomputations(self):
         """
-        Empty since catalin said to not precompute stuff
-        since we are using the pickle library
+        Perform precomputations
         """
-        pass
+
+        PredictionStrategy.perform_precomputations(self)
+
+        # dictionaries translating from user ids to rows and movie ids to columns
+        self.user_id_to_row, self.movie_id_to_col = self.data_loader.get_rating_matrix_user_and_movie_index_translation_dict()
+
+        # load the ratings matrix
+        self.M = self.data_loader.get_ratings_matrix()
+        
+        #d can't be greater than the dimensions of M
+        assert(self.d < len(self.M) and self.d < len(self.M[0]))
+
+        self.zero_values = np.where(self.M == 0) 
+
+        #Create U and V
+        #   M us a n x m matrix (the rating matrix)
+        #   U is a n x d matrix
+        #   V is a d x m matrix
+        
+        self.U = np.random.rand(len(self.M), self.d)
+        self.V = np.random.rand(self.d, len(self.M[0]))
+
+        self.number_of_values = len(self.M) * len(self.M[0]) - len(self.zero_values)
 
     def predict(self):
         """
@@ -227,14 +145,15 @@ class UvDecomposer():
             num_prediction += 1
             print('Progress {} / {}'.format(num_prediction, predictions_num))
 
-            column = self.user_id_to_row[user_id]
-            row    = self.movie_id_to_col[movie_id]
+            row = self.user_id_to_row[user_id]
+            col = self.movie_id_to_col[movie_id]
             
 
-            rating = self.predictor.predict(row, column)
+            rating = self.__predict_score(row, col)
+            print(rating)
 
             predictions[(user_id, movie_id)] = rating
 
         print("Finished predictions!")
-
+        
         return predictions
