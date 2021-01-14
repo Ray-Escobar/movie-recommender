@@ -1,15 +1,14 @@
 import unittest
 from unittest.mock import Mock
 
-from collaborative_filtering.CosineLshUserCollaborativeFiltering import CosineLshUserCollaborativeFiltering
-from collaborative_filtering.ItemLshCollaborativeFiltering import ItemLshCollaborativeFiltering
-from data_handling.DiskPersistor import DiskPersistor
-from FormulaFactory import FormulaFactory
+
+from collaborative_filtering.RowPearsonSimilarityMatrix import RowPearsonSimilarityMatrix
 
 
 import numpy as np
 
-from PredictionStrategy import PredictionStrategy
+from commons.PredictionStrategy import PredictionStrategy
+from collaborative_filtering.clustering.ClusterCollaborativeFiltering import ClusterCollaborativeFiltering
 
 
 class TestItemCollaborativeFiltering(unittest.TestCase):
@@ -38,12 +37,14 @@ class TestItemCollaborativeFiltering(unittest.TestCase):
         data_loader.get_rating_matrix_user_and_movie_index_translation_dict = Mock(return_value = (self.user_id_to_row, self.movie_id_to_col))
         data_loader.get_ratings_matrix = Mock(return_value = self.rating_matrix)
 
-        prediction_strategy: PredictionStrategy = ItemLshCollaborativeFiltering(
-            k_neighbors=5,
-            signiture_length=5,
-            max_query_distance=10,
-            formula_factory=FormulaFactory(),
-            random_seed=3
+        sim_matrix_row = RowPearsonSimilarityMatrix(self.rating_matrix)
+        sim_matrix_col = RowPearsonSimilarityMatrix(self.rating_matrix.T)
+
+        prediction_strategy: PredictionStrategy = ClusterCollaborativeFiltering(
+            k_neighbors=2,
+            row_similarity_matrix=sim_matrix_row,
+            col_similarity_matrix=sim_matrix_col,
+            new_dim_ratio=(3, 5)
         )
 
 
@@ -52,11 +53,11 @@ class TestItemCollaborativeFiltering(unittest.TestCase):
         prediction_strategy.perform_precomputations()
 
         expected_prediction = {
-            (1, 1): 2.435,
-            (2, 1): 2.636,
-            (2, 2): 2.255,
-            (2, 8): 2.0,
-            (4, 5): 4.0
+            (1, 1): 3.0,
+            (2, 1): 3.0,
+            (2, 2): 3.0,
+            (2, 8): 1.0,
+            (4, 5): 3.0
         }
 
         actual_prediction = prediction_strategy.predict()

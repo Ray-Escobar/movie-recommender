@@ -1,14 +1,16 @@
 import unittest
 from unittest.mock import Mock
-from FormulaFactory import SimilarityMeasureType, FormulaFactory
+
+from collaborative_filtering.lsh.UserLshCollaborativeFiltering import UserLshCollaborativeFiltering
+from commons.FormulaFactory import FormulaFactory
 
 
 import numpy as np
 
-from collaborative_filtering.NaiveUserCollaborativeFiltering import NaiveUserCollaborativeFiltering
+from commons.PredictionStrategy import PredictionStrategy
 
 
-class TestNaiveUserCollaborativeFiltering(unittest.TestCase):
+class TestUserCollaborativeFiltering(unittest.TestCase):
 
     rating_matrix = np.array([
         [0, 3, 1, 0, 5, 2, 0, 0, 5],
@@ -34,19 +36,30 @@ class TestNaiveUserCollaborativeFiltering(unittest.TestCase):
         data_loader.get_rating_matrix_user_and_movie_index_translation_dict = Mock(return_value = (self.user_id_to_row, self.movie_id_to_col))
         data_loader.get_ratings_matrix = Mock(return_value = self.rating_matrix)
 
-        prediction_strategy = NaiveUserCollaborativeFiltering(2, SimilarityMeasureType.MEANLESS_COSINE_SIMILARITY, FormulaFactory())
+        prediction_strategy: PredictionStrategy = UserLshCollaborativeFiltering(
+            k_neighbors=5,
+            signiture_length=4,
+            max_query_distance=16,
+            formula_factory=FormulaFactory(),
+            random_seed=3
+        )
+
 
         prediction_strategy.add_data_loader(data_loader)
 
+        prediction_strategy.perform_precomputations()
+
         expected_prediction = {
-            (1, 1): 3.01,
+            (1, 1): 5.0,
             (2, 1): 4.59,
-            (2, 2): 3.88,
+            (2, 2): 3.91,
             (2, 8): 1.4,
             (4, 5): 3.55
         }
 
         actual_prediction = prediction_strategy.predict()
+
+        print(actual_prediction)
 
 
         for expected_rating, actual_rating in zip(expected_prediction.values(), actual_prediction.values()):

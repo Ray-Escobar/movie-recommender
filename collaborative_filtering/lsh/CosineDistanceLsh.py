@@ -1,6 +1,6 @@
 from typing import List, Set, Tuple
 
-from collaborative_filtering.LocalitySensitiveHashTable import LocalitySensitiveHashTable
+from collaborative_filtering.lsh.LocalitySensitiveHashTable import LocalitySensitiveHashTable
 import numpy as np
 
 class CosineDistanceLsh(LocalitySensitiveHashTable):

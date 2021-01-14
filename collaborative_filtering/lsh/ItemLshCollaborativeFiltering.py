@@ -1,8 +1,9 @@
-from FormulaFactory import FormulaFactory, SimilarityMeasureType
-from PredictionStrategy import PredictionStrategy
-from collaborative_filtering.CosineDistanceLsh import CosineDistanceLsh
-from collaborative_filtering.LocalitySensitiveHashTable import LocalitySensitiveHashTable
-from collaborative_filtering.LshCollaborativeFilteringPredictor import LshCollaborativeFilteringPredictor
+from commons.FormulaFactory import FormulaFactory, SimilarityMeasureType
+from commons.PredictionStrategy import PredictionStrategy
+from collaborative_filtering.Utils import predict_instances_based_on_predictor
+from collaborative_filtering.lsh.CosineDistanceLsh import CosineDistanceLsh
+from collaborative_filtering.lsh.LocalitySensitiveHashTable import LocalitySensitiveHashTable
+from collaborative_filtering.lsh.LshCollaborativeFilteringPredictor import LshCollaborativeFilteringPredictor
 
 
 class ItemLshCollaborativeFiltering(PredictionStrategy):
@@ -49,7 +50,7 @@ class ItemLshCollaborativeFiltering(PredictionStrategy):
 
     def predict(self):
         """
-        Makes predictions based on user-user collaborative filtering.
+        Makes predictions based on item-item collaborative filtering.
         """
         PredictionStrategy.predict(self)
         return self.__predict(self.user_movie_instances_to_be_predicted)
@@ -64,24 +65,5 @@ class ItemLshCollaborativeFiltering(PredictionStrategy):
         :return: the dictionary containing the predicted ratings, indexed by the user_id, movie_id tuples
         """
 
-        predictions = dict()
-
-        print("Starting predictions...")
-
-        predictions_num = len(instances_to_be_predicted)
-        num_prediction = 0
-
-        for user_id, movie_id in instances_to_be_predicted:
-            num_prediction += 1
-            print('Progress {} / {}'.format(num_prediction, predictions_num))
-
-            row = self.movie_id_to_col_dict[movie_id]
-            column = self.user_id_to_row_dict[user_id]
-
-            rating = self.predictor.predict(row, column)
-
-            predictions[(user_id, movie_id)] = rating
-
-        print("Finished predictions!")
-
-        return predictions
+        return predict_instances_based_on_predictor(self.predictor, instances_to_be_predicted, self.user_id_to_row_dict,
+                                                    self.movie_id_to_col_dict, transpose=True)

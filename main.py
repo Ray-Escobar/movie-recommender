@@ -1,23 +1,20 @@
 # -*- coding: utf-8 -*-
 from typing import List
 
-import sys
-sys.path.append('.')
-
-from RatingPredictor import RatingPredictor
-from collaborative_filtering.CosineLshUserCollaborativeFiltering import CosineLshUserCollaborativeFiltering
-from collaborative_filtering.ItemLshCollaborativeFiltering import ItemLshCollaborativeFiltering
-from collaborative_filtering.UserLshCollaborativeFiltering import UserLshCollaborativeFiltering
+from commons.RatingPredictor import RatingPredictor
+from collaborative_filtering.RowPearsonSimilarityMatrix import RowPearsonSimilarityMatrix
+from collaborative_filtering.clustering.ClusterCollaborativeFiltering import ClusterCollaborativeFiltering
+from collaborative_filtering.global_baseline.ItemGlobalBaselineCollaborativeFiltering import \
+    ItemGlobalBaselineCollaborativeFiltering
+from collaborative_filtering.global_baseline.UserGlobalBaselineCollaborativeFiltering import \
+    UserGlobalBaselineCollaborativeFiltering
+from collaborative_filtering.naive.ItemNaiveCollaborativeFiltering import ItemNaiveCollaborativeFiltering
+from collaborative_filtering.naive.UserNaiveCollaborativeFiltering import UserNaiveCollaborativeFiltering
 from data_handling.DataLoader import DataLoader
 from data_handling.DataPathProvider import DataPathProvider
 from data_handling.DiskPersistor import DiskPersistor
-from FormulaFactory import SimilarityMeasureType, ScoringMeasureType, FormulaFactory
+from commons.FormulaFactory import FormulaFactory
 from data_handling.LocalFileCsvProvider import LocalFileCsvProvider
-from collaborative_filtering.NaiveUserCollaborativeFiltering import NaiveUserCollaborativeFiltering
-from matrix_factorization.UvDecomposition import UvDecomposer
-from matrix_factorization.BiasUvDecomposition import BiasUvDecomposer
-from matrix_factorization.RegularizedUvDecompositon import RegularizedUvDecomposer
-from PredictionStrategy import PredictionStrategy
 
 """
 FRAMEWORK FOR DATAMINING CLASS
@@ -45,7 +42,7 @@ movies_file = './data/movies.csv'
 users_file = './data/users.csv'
 ratings_file = './data/ratings.csv'
 predictions_file = './data/predictions.csv'
-submission_file = './data/submission.csv'
+submission_file = 'data/submissions/submission.csv'
 
 # Create a data path provider
 data_path_provider = DataPathProvider(movies_path=movies_file, users_path=users_file, ratings_path=ratings_file, predictions_path=predictions_file, submission_path=submission_file)
@@ -55,81 +52,14 @@ data_loader = DataLoader(data_path_provider=data_path_provider, csv_provider=Loc
 disk_persistor = DiskPersistor()
 formula_factory = FormulaFactory()
 
+# Create the user similarity matrix matrix if not already created
+sym_matrix_results = disk_persistor.perist_computation([
+    (lambda: RowPearsonSimilarityMatrix(data_loader.get_ratings_matrix()), 'global_pearson_similarity_matrix'),
+    (lambda: RowPearsonSimilarityMatrix(data_loader.get_ratings_matrix().T), 'global_pearson_similarity_matrix_movie')
+], force_update=False)
 
-
-
-# movies_data = data_loader.get_movies_data()
-# users_data = data_loader.get_users_data()
-# ratings_data = data_loader.get_ratings_data()
-# predictions_data = data_loader.get_predictions_data()
-# ratings_table = data_loader.get_ratings_map()
-#
-#print(ratings_matrix)
-
-predictor: RatingPredictor = RatingPredictor(
-    data_loader=data_loader,
-    disk_persistor=disk_persistor,
-    persistence_id='predictor',
-    prediction_strategies=[
-        BiasUvDecomposer(
-            d = 100,
-            mu = 0.0005,
-            delta1 = 1.7,
-            delta2 = 1.7,
-            iterations = 4,
-            formula_factory=formula_factory,
-            scorer_type= ScoringMeasureType.TRUE_RMSE,
-            bias_weight= 1.7
-        ),
-        RegularizedUvDecomposer(
-            d = 100,
-            mu = 0.0005,
-            delta1= 1.12,
-            delta2= 1.12,
-            iterations = 10,
-            formula_factory=formula_factory,
-            scorer_type= ScoringMeasureType.TRUE_RMSE,
-        )   
-    ]
-)
-
-
-'''
-prediction_strategies=[
-        ItemLshCollaborativeFiltering(
-            k_neighbors=30,
-            signiture_length=20,
-            max_query_distance=5000,
-            formula_factory=formula_factory,
-            random_seed=4,
-        ),
-        UserLshCollaborativeFiltering(
-            k_neighbors=30,
-            signiture_length=20,
-            max_query_distance=5000,
-            formula_factory=formula_factory,
-            random_seed=4,
-        ),
-        UvDecomposer(
-            d = 100,
-            delta = 0.0005,
-            regul= 1.7,
-            iterations = 50,
-            formula_factory=formula_factory,
-            scorer_type= ScoringMeasureType.TRUE_RMSE
-        ),
-                BiasUvDecomposer(
-            d = 100,
-            mu = 0.0005,
-            delta1 = 1.7,
-            delta2 = 1.7,
-            iterations = 0,
-            formula_factory=formula_factory,
-            scorer_type= ScoringMeasureType.TRUE_RMSE,
-            bias_weight= 1.7
-        ),   
-    ]
-'''
+global_pearson_similarity_matrix_user = sym_matrix_results[0]
+global_pearson_similarity_matrix_movie = sym_matrix_results[1]
 
 
 
@@ -149,16 +79,85 @@ def predict(predictor: RatingPredictor, force_update: bool, weights: List[float]
 ##
 #####
 
-## //!!\\ TO CHANGE by your prediction function
-#predictions = predict(predictor, False, [0.7, 0.3])
-predictions = predict(predictor, False, [0.5, 0.5])
 
-# Save predictions, should be in the form 'list of tuples' or 'list of lists'
-with open(submission_file, 'w') as submission_writer:
-    # Formates data
-    predictions = [map(str, row) for row in predictions]
-    predictions = [','.join(row) for row in predictions]
-    predictions = 'Id,Rating\n' + '\n'.join(predictions)
+def predict_and_write_to_file(predictor: RatingPredictor, force_update: bool, weights: List[float], submission_file: str):
 
-    # Writes it dowmn
-    submission_writer.write(predictions)
+
+    ## //!!\\ TO CHANGE by your prediction function
+    predictions = predict(predictor, force_update=force_update, weights=weights)
+
+    # Save predictions, should be in the form 'list of tuples' or 'list of lists'
+    with open(submission_file, 'w') as submission_writer:
+        # Formates data
+        predictions = [map(str, row) for row in predictions]
+        predictions = [','.join(row) for row in predictions]
+        predictions = 'Id,Rating\n' + '\n'.join(predictions)
+
+        # Writes it dowmn
+        submission_writer.write(predictions)
+
+
+
+
+
+# User - user and item - item collaborative filtering
+
+naive_colab_predictor: RatingPredictor = RatingPredictor(
+    data_loader=data_loader,
+    disk_persistor=disk_persistor,
+    persistence_id='predictor_naive',
+    prediction_strategies=[
+        ItemNaiveCollaborativeFiltering(
+            k_neighbors=30,
+            sim_matrix=global_pearson_similarity_matrix_movie
+        ),
+        UserNaiveCollaborativeFiltering(
+            k_neighbors=30,
+            sim_matrix=global_pearson_similarity_matrix_user
+        )
+    ]
+)
+
+predict_and_write_to_file(naive_colab_predictor, True, [0.7, 0.3], 'data/submissions/naive_colab.csv')
+
+
+# Clustering Collaborative Filtering
+clustering_predictor: RatingPredictor = RatingPredictor(
+    data_loader=data_loader,
+    disk_persistor=disk_persistor,
+    persistence_id='predictor_clustering',
+    prediction_strategies=[
+        ClusterCollaborativeFiltering(
+            row_similarity_matrix=global_pearson_similarity_matrix_user,
+            col_similarity_matrix=global_pearson_similarity_matrix_movie,
+            new_dim_ratio=(0.8, 0.8),
+            k_neighbors=35,
+            randomized=True,
+            randomized_num_extractions=1000,
+            random_seed=3
+        )
+    ]
+)
+
+predict_and_write_to_file(clustering_predictor, True, [1], 'data/submissions/clustering.csv')
+
+
+# User - user and item - item baseline collaborative filtering
+
+global_baseline_predictor: RatingPredictor = RatingPredictor(
+    data_loader=data_loader,
+    disk_persistor=disk_persistor,
+    persistence_id='predictor_baseline',
+    prediction_strategies=[
+        ItemGlobalBaselineCollaborativeFiltering(
+            k_neighbors=30,
+            sim_matrix=global_pearson_similarity_matrix_movie
+        ),
+        UserGlobalBaselineCollaborativeFiltering(
+            k_neighbors=30,
+            sim_matrix=global_pearson_similarity_matrix_user
+        )
+    ]
+)
+
+predict_and_write_to_file(global_baseline_predictor, True, [0.7, 0.3], 'data/submissions/global_baselines.csv')

@@ -1,20 +1,16 @@
 import unittest
 from unittest.mock import Mock
 
-from RatingPredictor import RatingPredictor
-from collaborative_filtering.CosineLshUserCollaborativeFiltering import CosineLshUserCollaborativeFiltering
-from collaborative_filtering.ItemLshCollaborativeFiltering import ItemLshCollaborativeFiltering
-from collaborative_filtering.UserLshCollaborativeFiltering import UserLshCollaborativeFiltering
-from data_handling.DiskPersistor import DiskPersistor
-from FormulaFactory import FormulaFactory
+from collaborative_filtering.lsh.ItemLshCollaborativeFiltering import ItemLshCollaborativeFiltering
+from commons.FormulaFactory import FormulaFactory
 
 
 import numpy as np
 
-from PredictionStrategy import PredictionStrategy
+from commons.PredictionStrategy import PredictionStrategy
 
 
-class TestUserCollaborativeFiltering(unittest.TestCase):
+class TestItemCollaborativeFiltering(unittest.TestCase):
 
     rating_matrix = np.array([
         [0, 3, 1, 0, 5, 2, 0, 0, 5],
@@ -40,37 +36,28 @@ class TestUserCollaborativeFiltering(unittest.TestCase):
         data_loader.get_rating_matrix_user_and_movie_index_translation_dict = Mock(return_value = (self.user_id_to_row, self.movie_id_to_col))
         data_loader.get_ratings_matrix = Mock(return_value = self.rating_matrix)
 
-        user_colab: PredictionStrategy = UserLshCollaborativeFiltering(
+        prediction_strategy: PredictionStrategy = ItemLshCollaborativeFiltering(
             k_neighbors=5,
-            signiture_length=4,
-            max_query_distance=16,
-            formula_factory=FormulaFactory(),
-            random_seed=3
-        )
-
-        item_colab: PredictionStrategy = ItemLshCollaborativeFiltering(
-            k_neighbors=5,
-            signiture_length=4,
-            max_query_distance=16,
+            signiture_length=5,
+            max_query_distance=10,
             formula_factory=FormulaFactory(),
             random_seed=3
         )
 
 
-        predictor: RatingPredictor = RatingPredictor(data_loader, DiskPersistor(), "test_predictor", [user_colab, item_colab])
+        prediction_strategy.add_data_loader(data_loader)
 
-        predictor.perform_precomputations()
-
+        prediction_strategy.perform_precomputations()
 
         expected_prediction = {
-            (1, 1): 3.2,
-            (2, 1): 3.22,
-            (2, 2): 2.75,
-            (2, 8): 2.33,
-            (4, 5): 3.39
+            (1, 1): 2.435,
+            (2, 1): 2.636,
+            (2, 2): 2.255,
+            (2, 8): 2.0,
+            (4, 5): 4.0
         }
 
-        actual_prediction = predictor.make_average_prediction(weights=[0.3, 0.7])
+        actual_prediction = prediction_strategy.predict()
 
         print(actual_prediction)
 

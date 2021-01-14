@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from FormulaFactory import FormulaFactory, SimilarityMeasureType
+from commons.FormulaFactory import FormulaFactory, SimilarityMeasureType
 
 
 class MyTestCase(unittest.TestCase):
