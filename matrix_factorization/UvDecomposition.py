@@ -113,7 +113,7 @@ class UvDecomposer(PredictionStrategy):
         self.U = np.random.rand(len(self.M), self.d)
         self.V = np.random.rand(self.d, len(self.M[0]))
 
-        self.number_of_values = len(self.M) * len(self.M[0]) - len(self.zero_values)
+        self.number_of_values = len(self.M[np.where(self.M > 0)])
 
     def predict(self):
         """
@@ -136,7 +136,7 @@ class UvDecomposer(PredictionStrategy):
 
         print("Starting predictions with UV decomposition...")
         self.__perform_decomposition() #start UV decompositon
-        
+
         predictions_num = len(instances_to_be_predicted)
         num_prediction = 0
 

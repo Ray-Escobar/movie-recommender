@@ -71,6 +71,16 @@ predictor: RatingPredictor = RatingPredictor(
     disk_persistor=disk_persistor,
     persistence_id='predictor',
     prediction_strategies=[
+        BiasUvDecomposer(
+            d = 100,
+            mu = 0.0005,
+            delta1 = 1.7,
+            delta2 = 1.7,
+            iterations = 4,
+            formula_factory=formula_factory,
+            scorer_type= ScoringMeasureType.TRUE_RMSE,
+            bias_weight= 1.7
+        ),
         RegularizedUvDecomposer(
             d = 100,
             mu = 0.0005,

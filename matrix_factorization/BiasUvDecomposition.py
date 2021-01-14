@@ -36,10 +36,12 @@ class BiasUvDecomposer(UvDecomposer):
         self.user_bias   = np.random.rand(len(self.M))
         self.movie_bias  = np.random.rand(len(self.M[0]))
         print("Bias UV Decomposer")
+        print("avg of biased one", self.mean_rating)
 
     def decompose_matrices(self, row:int, col:int):
 
         if (self.wow):
+            print(self.mean_rating)
             print("Starting with bias UV")
             self.wow = False
 
