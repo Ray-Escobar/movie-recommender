@@ -135,9 +135,8 @@ class UvDecomposer(PredictionStrategy):
         predictions = dict()
 
         print("Starting predictions with UV decomposition...")
-
         self.__perform_decomposition() #start UV decompositon
-
+        
         predictions_num = len(instances_to_be_predicted)
         num_prediction = 0
 

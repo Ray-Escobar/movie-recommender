@@ -25,22 +25,36 @@ class BiasUvDecomposer(UvDecomposer):
         self.delta2 = delta2
         self.bias_weight = bias_weight
 
-        self.test = True
+        self.wow = True
+
+        
         
     def perform_precomputations(self):
         super().perform_precomputations()
 
-        mean_rating = self.M.sum()/self.number_of_values
-        user_bias   = np.random.rand(len(self.M))
-        movie_bias  = np.random.rand(len(self.M[0]))
+        self.mean_rating = self.M.sum()/self.number_of_values
+        self.user_bias   = np.random.rand(len(self.M))
+        self.movie_bias  = np.random.rand(len(self.M[0]))
+        print("Bias UV Decomposer")
 
     def decompose_matrices(self, row:int, col:int):
 
-        if (self.test):
-            print("in the biased one :)")
-            self.test = False
+        if (self.wow):
+            print("Starting with bias UV")
+            self.wow = False
+
+        gradient = 2*(self.M[row][col]-(self.mean_rating + self.user_bias[row] + self.movie_bias[col] + np.dot(self.U[row], self.V[:,col]) ))
         
-        gradient = 2*(self.M[row][col] - np.dot(self.U[row], self.V[:,col]))
         self.U[row]   = self.U[row]   + self.mu*(gradient*self.V[:,col] - self.delta1 * self.U[row]  )
         self.V[:,col] = self.V[:,col] + self.mu*(gradient*self.U[row]   - self.delta2 * self.V[:,col])
+
+        ### now altering the biases
+
+        self.user_bias[row]  = self.user_bias[row]  + self.mu*(gradient - self.bias_weight*self.user_bias[row] )
+        self.movie_bias[col] = self.movie_bias[col] + self.mu*(gradient - self.bias_weight*self.movie_bias[col] )
+
+
+    
+
+
 

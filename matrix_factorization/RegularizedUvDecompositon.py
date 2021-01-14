@@ -27,6 +27,7 @@ class RegularizedUvDecomposer(UvDecomposer):
         
     def perform_precomputations(self):
         super().perform_precomputations()
+        print("Only Regularized UV decomposer")
 
 
     def decompose_matrices(self, row:int, col:int):
