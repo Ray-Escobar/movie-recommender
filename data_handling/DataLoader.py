@@ -71,6 +71,7 @@ class DataLoader:
 
         return self.ratings_matrix_user_column, self.ratings_matrix_movie_column
 
+    #use this one!!!!!!!!!!!
     def get_rating_matrix_user_and_movie_index_translation_dict(self) -> (dict, dict):
         """
         Returns a tuple of dictionaries that can be used to translate user ids to rows inside the rating matrix
@@ -92,6 +93,7 @@ class DataLoader:
         for col, movie_id in enumerate(movie_data):
             self.movie_id_to_ratings_matrix_column[movie_id] = col
 
+        #user is actually that row in the matrix   this movie with this id is mapped to that column
         return self.user_id_to_ratings_matrix_row, self.movie_id_to_ratings_matrix_column
 
 

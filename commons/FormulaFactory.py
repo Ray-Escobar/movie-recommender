@@ -5,6 +5,9 @@ class SimilarityMeasureType(Enum):
     COSINE_SIMILARITY = 1
     MEANLESS_COSINE_SIMILARITY = 2
 
+class ScoringMeasureType(Enum):
+    TRUE_RMSE = 1
+
 class FormulaFactory:
     """
     Factory class used to create useful formulas to be used across the application
@@ -53,12 +56,24 @@ class FormulaFactory:
 
             return sub_mean(vec)
 
-
-
-
         cosine_similarity = self.create_cosine_similarity_measure()
 
         return lambda vec_x, vec_y: cosine_similarity(make_meanless(vec_x), make_meanless(vec_y))
+
+    def create_true_rmse_measure(self):
+        """
+        RMSE measure
+        """
+
+        def take_rmse_score(M:np.array, UV:np.array, zero_values:np.array, n:int):
+            sum_matrix = M - UV                 
+            sum_matrix[zero_values] = 0
+
+            #square the matrix, sum the rows, sum the vectors, divide by
+            # number of non-zero-entries and take the square root
+            return np.sqrt((np.square(sum_matrix)).sum(axis = 1).sum()/n)
+
+        return take_rmse_score
 
     def create_similarity_measure(self, similarity_measure_type: SimilarityMeasureType):
         """
@@ -73,6 +88,21 @@ class FormulaFactory:
 
         elif similarity_measure_type is SimilarityMeasureType.MEANLESS_COSINE_SIMILARITY:
             return self.create_meanless_cosine_similarity_measure()
+
+        else:
+            raise Exception("Unsuported similarity type!")
+
+
+    def create_scoring_measure(self, scoring_measure_type: ScoringMeasureType):
+        """
+        Returns a function the performs the desired similarity type
+        :param similarity_measure_type: the similarity measure to be created
+        :raises Exception: if the provided type is unsuported.
+
+        :return: a similarity measure of the desired type
+        """
+        if scoring_measure_type is ScoringMeasureType.TRUE_RMSE:
+            return self.create_true_rmse_measure()
 
         else:
             raise Exception("Unsuported similarity type!")
