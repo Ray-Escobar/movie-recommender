@@ -4,9 +4,10 @@ import sys
 
 sys.path.append('.')
 
-from FormulaFactory import FormulaFactory, ScoringMeasureType
+from commons.FormulaFactory import FormulaFactory
+from commons.FormulaFactory import ScoringMeasureType
+from commons.PredictionStrategy import PredictionStrategy
 from data_handling.DataLoader import DataLoader
-from PredictionStrategy import PredictionStrategy
 from matrix_factorization import MatrixNormalize
 
 class UvDecomposer(PredictionStrategy):
@@ -20,7 +21,7 @@ class UvDecomposer(PredictionStrategy):
         assert(d > 1)
         
         self.d = d                      #dimensions of the thin part
-        self.mu = mu              #speed of descent
+        self.mu = mu                    #speed of descent
         self.iterations = iterations    #number of iterations to go for
         self.scoring_measure = formula_factory.create_scoring_measure(scoring_measure_type=scorer_type)
 
@@ -40,7 +41,7 @@ class UvDecomposer(PredictionStrategy):
 
         return predictions
 
-    def __predict_score(self, user_row:int, item_col:int) -> dict:
+    def predict_score(self, user_row:int, item_col:int) -> dict:
         """
         Get the prediction for the user and movie
 
@@ -148,8 +149,11 @@ class UvDecomposer(PredictionStrategy):
             col = self.movie_id_to_col[movie_id]
             
 
-            rating = self.__predict_score(row, col)
-            print(rating)
+            rating = self.predict_score(row, col)
+            if (rating > 5.0):
+                rating = 5.0
+            if (rating < 0.0):
+                rating = 0.0
 
             predictions[(user_id, movie_id)] = rating
 

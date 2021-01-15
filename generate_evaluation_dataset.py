@@ -1,6 +1,7 @@
 from data_handling.DataLoader import DataLoader
 
-# Output
+import sys
+sys.path.append('.')
 from data_handling.DataPathProvider import DataPathProvider
 from data_handling.LocalFileCsvProvider import LocalFileCsvProvider
 
@@ -27,6 +28,10 @@ data_path_provider = DataPathProvider(movies_path=movies_file, users_path=users_
 data_loader = DataLoader(data_path_provider=data_path_provider, csv_provider=LocalFileCsvProvider())
 
 
+#Generate the working directory if it doesn't exist!
+import os
+if not os.path.exists(WORKING_DIR):
+    os.mkdir(WORKING_DIR)
 
 
 def split_dataset_reduce(data_loader: DataLoader, users_filename: str, movies_filename: str, train_filename: str, test_filename: str, expected_ratings_filename: str, ratio: float = 0.3, frac_users: float = 1.0, frac_movies: float = 1.0):
@@ -42,6 +47,8 @@ def split_dataset_reduce(data_loader: DataLoader, users_filename: str, movies_fi
     :param ratio: - the percentage of the data to be used for testing and training
     """
 
+    import os
+    print(os.getcwd())
     # shrink the size of the dataset
 
     user_data = data_loader.get_users_data()
@@ -74,6 +81,8 @@ def split_dataset_reduce(data_loader: DataLoader, users_filename: str, movies_fi
     train_data = ratings_data_reduced.drop(test_data.index)
     predictions_to_be_performed = test_data.iloc[:, [0, 1]]
 
+
+
     # Write to file
 
     user_data_reduced.to_csv('{}/{}'.format(WORKING_DIR, users_filename), sep=';', index=False, header=False)
@@ -83,4 +92,4 @@ def split_dataset_reduce(data_loader: DataLoader, users_filename: str, movies_fi
     predictions_to_be_performed.to_csv('{}/{}'.format(WORKING_DIR, test_filename), sep=';', index=False, header=False)
 
 
-split_dataset_reduce(data_loader, REDUCED_USERS, REDUCED_MOVIES, TRAIN_DATA_FILENAME, TEST_PREDICTIONS_FILENAME, EXPECTED_PREDICTED_RATINGS, ratio=0.3, frac_users=0.1, frac_movies=0.1)
+split_dataset_reduce(data_loader, REDUCED_USERS, REDUCED_MOVIES, TRAIN_DATA_FILENAME, TEST_PREDICTIONS_FILENAME, EXPECTED_PREDICTED_RATINGS, ratio=0.2, frac_users=1.0, frac_movies=1.0)

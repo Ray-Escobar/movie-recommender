@@ -14,6 +14,10 @@ from data_handling.DataLoader import DataLoader
 from data_handling.DataPathProvider import DataPathProvider
 from data_handling.DiskPersistor import DiskPersistor
 from commons.FormulaFactory import FormulaFactory
+from commons.FormulaFactory import ScoringMeasureType
+from matrix_factorization.UvDecomposition import UvDecomposer
+from matrix_factorization.RegularizedUvDecompositon import RegularizedUvDecomposer
+from matrix_factorization.BiasUvDecomposition import BiasUvDecomposer
 from data_handling.LocalFileCsvProvider import LocalFileCsvProvider
 
 """
@@ -42,7 +46,7 @@ movies_file = './data/movies.csv'
 users_file = './data/users.csv'
 ratings_file = './data/ratings.csv'
 predictions_file = './data/predictions.csv'
-submission_file = 'data/submissions/submission.csv'
+submission_file = './data/submissions/submission.csv'
 
 # Create a data path provider
 data_path_provider = DataPathProvider(movies_path=movies_file, users_path=users_file, ratings_path=ratings_file, predictions_path=predictions_file, submission_path=submission_file)
@@ -60,6 +64,10 @@ sym_matrix_results = disk_persistor.perist_computation([
 
 global_pearson_similarity_matrix_user = sym_matrix_results[0]
 global_pearson_similarity_matrix_movie = sym_matrix_results[1]
+
+#Generate formular factory and True RMSE score
+formula_factory = FormulaFactory()
+scoring_measure = ScoringMeasureType.TRUE_RMSE
 
 
 
@@ -160,4 +168,23 @@ global_baseline_predictor: RatingPredictor = RatingPredictor(
     ]
 )
 
-predict_and_write_to_file(global_baseline_predictor, True, [0.7, 0.3], 'data/submissions/global_baselines.csv')
+
+_biased_UV: RatingPredictor = RatingPredictor(
+    data_loader=data_loader,
+    disk_persistor=disk_persistor,
+    persistence_id='predictor_baseline',
+    prediction_strategies=[
+        BiasUvDecomposer(
+            iterations=35,
+            d=70,
+            mu= 0.003,
+            delta1=0.45,
+            delta2=0.38,
+            bias_weight=0.4,
+            formula_factory = formula_factory,
+            scorer_type=scoring_measure
+        )
+    ]
+)
+
+predict_and_write_to_file(global_baseline_and_biased_UV, False, [1.0], 'data/submissions/global_baselines_and_bUV.csv')

@@ -1,12 +1,14 @@
 import numpy as np
+import math
+from matrix_factorization.UvDecomposition import UvDecomposer
+
 import sys
 sys.path.append('.')
 
-from FormulaFactory import FormulaFactory, ScoringMeasureType
+from commons.FormulaFactory import FormulaFactory
+from commons.FormulaFactory import ScoringMeasureType
+from commons.PredictionStrategy import PredictionStrategy
 from data_handling.DataLoader import DataLoader
-from PredictionStrategy import PredictionStrategy
-from matrix_factorization import MatrixNormalize
-from matrix_factorization.UvDecomposition import UvDecomposer
 
 class RegularizedUvDecomposer(UvDecomposer):
 

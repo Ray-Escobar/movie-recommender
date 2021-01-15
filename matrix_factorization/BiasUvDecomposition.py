@@ -1,12 +1,14 @@
 import numpy as np
+import math
+from matrix_factorization.UvDecomposition import UvDecomposer
+
 import sys
 sys.path.append('.')
 
-from FormulaFactory import FormulaFactory, ScoringMeasureType
+from commons.FormulaFactory import FormulaFactory
+from commons.FormulaFactory import ScoringMeasureType
+from commons.PredictionStrategy import PredictionStrategy
 from data_handling.DataLoader import DataLoader
-from PredictionStrategy import PredictionStrategy
-from matrix_factorization import MatrixNormalize
-from matrix_factorization.UvDecomposition import UvDecomposer
 
 class BiasUvDecomposer(UvDecomposer):
 
@@ -36,7 +38,26 @@ class BiasUvDecomposer(UvDecomposer):
         self.user_bias   = np.random.rand(len(self.M))
         self.movie_bias  = np.random.rand(len(self.M[0]))
         print("Bias UV Decomposer")
-        print("avg of biased one", self.mean_rating)
+
+    def score(self) -> (float):
+        """
+        Calcualtes error of the UV matrix
+
+        :return: score value from scoring measure
+        """
+        return self.scoring_measure(self.M, np.matmul(self.U, self.V), self.zero_values,
+                                    self.user_bias, self.movie_bias, self.mean_rating,
+                                    self.number_of_values)
+
+
+    def predict_score(self, user_row:int, item_col:int) -> dict:
+        """
+        Get the prediction for the user and movie
+
+        :return: prediction matrix
+        """
+        return self.predictions[user_row][item_col] + self.user_bias[user_row] + self.movie_bias[item_col] + self.mean_rating
+
 
     def decompose_matrices(self, row:int, col:int):
 
