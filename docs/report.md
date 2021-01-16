@@ -60,7 +60,7 @@ The three implementaions discussed below have some constants in the way they are
 
 The intial implementation consisted of simply reducing RMSE without considering any regulatization terms. To do this, we simply iterated over each term in the matrix and calucalted the gradient of the simple function. This implementation followed closely this equation from the book in page {add page}:
 
-In this step we also tried to normalize the original M matrix, but we ntoiced the gradient was
+In this step we also tried to normalize the original M matrix, but we noticed the gradient was
 very unstable with these smaller values. This mean that the RMSE would never converge to a value
 and sometimes even some values tended towards infinty. 
 
@@ -70,7 +70,7 @@ This original RMSE implementation was decent, but it was affected by overfitting
 
 Regularized UV compostion turned out to be the a huge step into the right direction. With some simple parameter tuning we were able to easily beat the results of our collaborative filtering algorithms.
 
-The main difference with this approach is that we added regularization terms, which makes gradeint adjustments be more conservatice. Hence this model contained two extra parameters - namely delta_1 and delta_2. delta_1 corresponded to the regularization term for the rows of the original matrix (the users), while delta2 consisted of the regularization term for the columns of the original matrix (the movies). The equation is the one below:
+The main difference with this approach is that we added regularization terms, which makes gradeint adjustments be more conservatiVe. Hence this model contained two extra parameters - namely delta_1 and delta_2. delta_1 corresponded to the regularization term for the rows of the original matrix (the users), while delta2 consisted of the regularization term for the columns of the original matrix (the movies). The equation is the one below:
 
 The regularization terms were crucial and lead towards investigating new approaches to improve even more.
 
@@ -141,6 +141,27 @@ Take the best result obtained by each method and compare it with the others.
 
 
 ### Latent Factors
+
+For Simple UV Decomposer: 
+Mu = 0.005 - 0.003
+Number of neighbors: 5, 15, 30, 50
+
+LSH:
+Weights: 0.3-0.7, 0.5-0.5, 0.7-0.3
+Number of neighbors: 5, 15, 30, 50
+Distance measure: cosine / pearson
+
+Clustering:
+Sizes: (30%, 30%), (50%, 50%), (70%, 70%)
+Number of neighbors: 5, 15, 30, 50
+Number of samples: 10, 100, 1000
+
+
+#### Simple UV decomposer
+
+#### Regularized UV decomposer
+
+#### Biased-Regularized UV decomposer
 
 ### All Models Combined
 Run a final algorithm using all models. Choose the best individual parameters. Justify the weights based on observed performance. 

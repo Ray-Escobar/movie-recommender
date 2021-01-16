@@ -17,7 +17,7 @@ class BiasUvDecomposer(UvDecomposer):
     """
 
     def __init__(self, d:int, iterations:int, mu:float, delta1:float, delta2:float, formula_factory:FormulaFactory, 
-                       scorer_type: ScoringMeasureType, bias_weight:int):
+                       scorer_type: ScoringMeasureType, bias_weight1:int, bias_weight2:int):
 
 
         super().__init__(d, iterations, mu, formula_factory, scorer_type)
@@ -25,7 +25,8 @@ class BiasUvDecomposer(UvDecomposer):
         assert(d > 1)
         self.delta1 = delta1
         self.delta2 = delta2
-        self.bias_weight = bias_weight
+        self.bias_weight1 = bias_weight1
+        self.bias_weight2 = bias_weight2
 
         self.wow = True
 
@@ -62,7 +63,6 @@ class BiasUvDecomposer(UvDecomposer):
     def decompose_matrices(self, row:int, col:int):
 
         if (self.wow):
-            print(self.mean_rating)
             print("Starting with bias UV")
             self.wow = False
 
@@ -73,8 +73,8 @@ class BiasUvDecomposer(UvDecomposer):
 
         ### now altering the biases
 
-        self.user_bias[row]  = self.user_bias[row]  + self.mu*(gradient - self.bias_weight*self.user_bias[row] )
-        self.movie_bias[col] = self.movie_bias[col] + self.mu*(gradient - self.bias_weight*self.movie_bias[col] )
+        self.user_bias[row]  = self.user_bias[row]  + self.mu*(gradient - self.bias_weight1*self.user_bias[row] )
+        self.movie_bias[col] = self.movie_bias[col] + self.mu*(gradient - self.bias_weight2*self.movie_bias[col] )
 
 
     

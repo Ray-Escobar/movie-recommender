@@ -67,7 +67,7 @@ global_pearson_similarity_matrix_movie = sym_matrix_results[1]
 
 #Generate formular factory and True RMSE score
 formula_factory = FormulaFactory()
-scoring_measure = ScoringMeasureType.TRUE_RMSE
+scoring_measure = ScoringMeasureType.BIAS_TRUE_RMSE
 
 
 
@@ -169,22 +169,36 @@ global_baseline_predictor: RatingPredictor = RatingPredictor(
 )
 
 
-_biased_UV: RatingPredictor = RatingPredictor(
+global_biased_UV: RatingPredictor = RatingPredictor(
     data_loader=data_loader,
     disk_persistor=disk_persistor,
     persistence_id='predictor_baseline',
     prediction_strategies=[
-        BiasUvDecomposer(
-            iterations=35,
-            d=70,
-            mu= 0.003,
-            delta1=0.45,
-            delta2=0.38,
-            bias_weight=0.4,
-            formula_factory = formula_factory,
-            scorer_type=scoring_measure
-        )
+        ItemGlobalBaselineCollaborativeFiltering(
+            k_neighbors=30,
+            sim_matrix=global_pearson_similarity_matrix_movie
+            ),
+            UserGlobalBaselineCollaborativeFiltering(
+                k_neighbors=30,
+                sim_matrix=global_pearson_similarity_matrix_user
+            ),
+            BiasUvDecomposer(
+                iterations=55,
+                d=7,
+                mu= 0.003,
+                delta1=0.10,
+                delta2=0.06,
+                bias_weight1=0.11,
+                bias_weight2=0.08,
+                formula_factory = formula_factory,
+                scorer_type=scoring_measure
+            )
     ]
 )
 
-predict_and_write_to_file(global_baseline_and_biased_UV, False, [1.0], 'data/submissions/global_baselines_and_bUV.csv')
+
+predict_and_write_to_file(global_biased_UV, False, [0.4, 0.1, 0.5], 'data/submissions/new_Predictions1.csv')
+
+
+#0.8036744443488222
+#0.80265563268677
