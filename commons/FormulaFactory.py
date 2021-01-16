@@ -7,6 +7,7 @@ class SimilarityMeasureType(Enum):
 
 class ScoringMeasureType(Enum):
     TRUE_RMSE = 1
+    BIAS_TRUE_RMSE = 2
 
 class FormulaFactory:
     """
@@ -75,6 +76,30 @@ class FormulaFactory:
 
         return take_rmse_score
 
+    def create_true_rmse_measure_with_biases(self):
+        """
+        RMSE measure
+        """
+
+        def take_rmse_score(M:np.array, UV:np.array, zero_values:np.array, 
+                            user_bias:np.array, movie_bias:np.array, mean:np.array, n:int):
+
+            result = np.empty_like(M) 
+            for i in range(len(UV)):
+                result[i, :] = UV[i, :] + movie_bias
+
+            for i in range(len(UV[0])):
+                result[:,i] = result[:,i] + user_bias
+
+            sum_matrix = M - (mean + result)                 
+            sum_matrix[zero_values] = 0
+
+            #square the matrix, sum the rows, sum the vectors, divide by
+            # number of non-zero-entries and take the square root
+            return np.sqrt((np.square(sum_matrix)).sum(axis = 1).sum()/n)
+
+        return take_rmse_score
+
     def create_similarity_measure(self, similarity_measure_type: SimilarityMeasureType):
         """
         Returns a function the performs the desired similarity type
@@ -103,6 +128,9 @@ class FormulaFactory:
         """
         if scoring_measure_type is ScoringMeasureType.TRUE_RMSE:
             return self.create_true_rmse_measure()
+
+        elif scoring_measure_type is ScoringMeasureType.BIAS_TRUE_RMSE:
+            return self.create_true_rmse_measure_with_biases()
 
         else:
             raise Exception("Unsuported similarity type!")

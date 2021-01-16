@@ -14,6 +14,11 @@ from data_handling.DataPathProvider import DataPathProvider
 from data_handling.DiskPersistor import DiskPersistor
 from data_handling.LocalFileCsvProvider import LocalFileCsvProvider
 from evaluation_tools import generate_prediction_report
+from commons.FormulaFactory import FormulaFactory
+from commons.FormulaFactory import ScoringMeasureType
+from matrix_factorization.RegularizedUvDecompositon import RegularizedUvDecomposer
+from matrix_factorization.BiasUvDecomposition import BiasUvDecomposer
+from matrix_factorization.SimpleUvDecomposition import SimpleUVDecomposer
 
 #####
 ##
@@ -51,13 +56,25 @@ for instance in expected_ratings_array:
 print(data_loader.get_ratings_matrix())
 
 # Create the user similarity matrix matrix if not already created
+
+'''
+#commented this out since it slows down my stuff for UV decomposers
+
+
+
 sym_matrix_results = disk_persistor.perist_computation([
     (lambda: RowPearsonSimilarityMatrix(data_loader.get_ratings_matrix()), 'evaluation_global_pearson_similarity_matrix'),
     (lambda: RowPearsonSimilarityMatrix(data_loader.get_ratings_matrix().T), 'evaluation_global_pearson_similarity_matrix_movie')
-], force_update=True)
+], force_update=False)
 
 global_pearson_similarity_matrix_user = sym_matrix_results[0]
 global_pearson_similarity_matrix_movie = sym_matrix_results[1]
+'''
+
+#Generate formular factory and True RMSE score
+formula_factory = FormulaFactory()
+scoring_measure_rmse = ScoringMeasureType.TRUE_RMSE
+scoring_measure_bias = ScoringMeasureType.BIAS_TRUE_RMSE
 
 
 #####
@@ -65,7 +82,7 @@ global_pearson_similarity_matrix_movie = sym_matrix_results[1]
 ## ACTUAL EVALUTATION
 ##
 #####
-
+'''
 evaluation_naive = {
     'name': 'Naive Collaborative Filtering',
     'description': 'Naive Collaborative Filtering with weights 0.7 and 0.3 item - user',
@@ -137,8 +154,150 @@ global_biases = {
 }
 
 
+regularized_UVdecomposer = {
+    'name': 'Regularized UV Decomposer',
+    'description': 'Regularized UV decomposer, D=50, mu = 0.005, delta1= 1.09, delta2 = 1.08',
+    'weights': [1.0],
+    'force_update': True,
+    'predictor': RatingPredictor(
+                        data_loader=data_loader,
+                        disk_persistor=disk_persistor,
+                        persistence_id='evaluation_uv_regularized',
+                        prediction_strategies=[
+                                RegularizedUvDecomposer(
+                                    iterations=35,
+                                    d=30,
+                                    mu= 0.003,
+                                    delta1=0.52,
+                                    delta2=0.51,
+                                    formula_factory = formula_factory,
+                                    scorer_type=scoring_measure
+                                )
+                            ]
+                    )
+
+}
+
+'''
+
+
+simple_uv = {
+    'name': ' biased one Regularized UV Decomposer',
+    'description': 'Simple UV, D=7, mu = 0.003,',
+    'weights': [1.0],
+    'force_update': True,
+    'predictor': RatingPredictor(
+                        data_loader=data_loader,
+                        disk_persistor=disk_persistor,
+                        persistence_id='evaluation_uv_regularized',
+                        prediction_strategies=[
+                            SimpleUVDecomposer(
+                                d = 7,
+                                iterations=55,
+                                mu=0.003,
+                                formula_factory=formula_factory,
+                                scorer_type=scoring_measure_rmse
+                            )
+                        ]
+                    )
+
+}
+
+
+regularized_uv = {
+    'name': 'Regularized UV Decomposer',
+    'description': 'Regularized, D=7, mu = 0.003, delta1= 0.08, delta2 = 0.10',
+    'weights': [1.0],
+    'force_update': True,
+    'predictor': RatingPredictor(
+                        data_loader=data_loader,
+                        disk_persistor=disk_persistor,
+                        persistence_id='evaluation_uv_regularized',
+                        prediction_strategies=[
+                                RegularizedUvDecomposer(
+                                    iterations=55,
+                                    d=7,
+                                    mu= 0.003,
+                                    delta1=0.08,
+                                    delta2=0.10,
+                                    formula_factory = formula_factory,
+                                    scorer_type=scoring_measure_rmse
+                                )
+                            ]
+                    )
+
+}
+
+
+biased_uv = {
+    'name': 'Biased UV Decomposer',
+    'description': 'Biased 1, D=7, mu = 0.003, delta1= 0.08, delta2 = 0.10, bias1 = 0.07, bias2 = 0.09 ',
+    'weights': [1.0],
+    'force_update': True,
+    'predictor': RatingPredictor(
+                        data_loader=data_loader,
+                        disk_persistor=disk_persistor,
+                        persistence_id='evaluation_uv_regularized',
+                        prediction_strategies=[
+                                BiasUvDecomposer(
+                                    iterations=55,
+                                    d=7,
+                                    mu= 0.003,
+                                    delta1=0.08,
+                                    delta2=0.10,
+                                    bias_weight1=0.07,
+                                    bias_weight2=0.09,
+                                    formula_factory = formula_factory,
+                                    scorer_type=scoring_measure_bias
+                                )
+                            ]
+                    )
+
+}
+
+'''
+
+biased3_UVdecomposer = {
+    'name': 'Only Regularized UV Decomposer',
+    'description': 'biased 3, D=50, mu = 0.005, delta1= 1.15, delta2 = 1.08',
+    'weights': [0.40, 0.10, 0.5],
+    'force_update': True,
+    'predictor': RatingPredictor(
+                        data_loader=data_loader,
+                        disk_persistor=disk_persistor,
+                        persistence_id='evaluation_uv_regularized',
+                        prediction_strategies=[
+                                ItemGlobalBaselineCollaborativeFiltering(
+                                    k_neighbors=30,
+                                    sim_matrix=global_pearson_similarity_matrix_movie
+                                ),
+                                UserGlobalBaselineCollaborativeFiltering(
+                                    k_neighbors=30,
+                                    sim_matrix=global_pearson_similarity_matrix_user
+                                ),
+                                BiasUvDecomposer(
+                                    iterations=55,
+                                    d=7,
+                                    mu= 0.003,
+                                    delta1=0.10,
+                                    delta2=0.06,
+                                    bias_weight1=0.11,
+                                    bias_weight2=0.08,
+                                    formula_factory = formula_factory,
+                                    scorer_type=scoring_measure_bias
+                                )
+                            ]
+                    )
+
+}
+'''
+
+
+
+
 # Generate reports for evaluations
 
-generate_prediction_report('test_report', [evaluation_naive, evaluation_clustering, global_biases], expected_ratings_dict)
+#generate_prediction_report('test_report', [evaluation_naive, evaluation_clustering, global_biases, regularized_UVdecomposer, biased_UVdecomposer], expected_ratings_dict)
+generate_prediction_report('graph_report', [ simple_uv, regularized_uv, biased_uv ], expected_ratings_dict)
 
 
