@@ -43,6 +43,7 @@ class AgglomerativeClusterer:
         self.randomized = randomized
         self.num_extractions = randomized_num_extractions
 
+
         self.item_indices = item_indices
         self.k_clusters = k_clusters
         self.sim_matrix = sim_matrix
@@ -104,7 +105,9 @@ class AgglomerativeClusterer:
         """
 
         pair = (0, 1)
-        min_dist = self.sim_matrix[0][1]
+        min_dist = 1 - self.sim_matrix[0][1]
+
+
 
         for _ in range(num_extractions):
             i = random.randrange(0, len(clusters) - 1)
@@ -113,9 +116,12 @@ class AgglomerativeClusterer:
             cluster1 = clusters[i]
             cluster2 = clusters[j]
 
-            if self.sim_matrix[cluster1.get_clustroid()][cluster2.get_clustroid()] < min_dist:
-                min_dist = self.sim_matrix[cluster1.get_clustroid()][cluster2.get_clustroid()]
+
+            if (1 - self.sim_matrix[cluster1.get_clustroid()][cluster2.get_clustroid()]) < min_dist:
+                min_dist = 1 - self.sim_matrix[cluster1.get_clustroid()][cluster2.get_clustroid()]
                 pair = (i, j)
+
+
 
         return pair
 
@@ -131,15 +137,15 @@ class AgglomerativeClusterer:
             raise Exception('At least 2 clusters are necessary for the operation')
         pair = (0, 1)
 
-        min_dist = self.sim_matrix[0][1]
+        min_dist = 1 - self.sim_matrix[0][1]
 
         for i in range(0, len(clusters) - 1):
             for j in range(i + 1, len(clusters)):
                 cluster1 = clusters[i]
                 cluster2 = clusters[j]
 
-                if self.sim_matrix[cluster1.get_clustroid()][cluster2.get_clustroid()] < min_dist:
-                    min_dist = self.sim_matrix[cluster1.get_clustroid()][cluster2.get_clustroid()]
+                if (1 - self.sim_matrix[cluster1.get_clustroid()][cluster2.get_clustroid()]) < min_dist:
+                    min_dist = (1 - self.sim_matrix[cluster1.get_clustroid()][cluster2.get_clustroid()])
                     pair = (i, j)
 
         return pair
