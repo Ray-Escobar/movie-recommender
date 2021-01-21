@@ -92,4 +92,4 @@ def split_dataset_reduce(data_loader: DataLoader, users_filename: str, movies_fi
     predictions_to_be_performed.to_csv('{}/{}'.format(WORKING_DIR, test_filename), sep=';', index=False, header=False)
 
 
-split_dataset_reduce(data_loader, REDUCED_USERS, REDUCED_MOVIES, TRAIN_DATA_FILENAME, TEST_PREDICTIONS_FILENAME, EXPECTED_PREDICTED_RATINGS, ratio=0.2, frac_users=1.0, frac_movies=1.0)
+split_dataset_reduce(data_loader, REDUCED_USERS, REDUCED_MOVIES, TRAIN_DATA_FILENAME, TEST_PREDICTIONS_FILENAME, EXPECTED_PREDICTED_RATINGS, ratio=0.2, frac_users=0.4, frac_movies=0.4)

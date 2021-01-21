@@ -4,9 +4,11 @@ from collaborative_filtering.global_baseline.ItemGlobalBaselineCollaborativeFilt
     ItemGlobalBaselineCollaborativeFiltering
 from collaborative_filtering.global_baseline.UserGlobalBaselineCollaborativeFiltering import \
     UserGlobalBaselineCollaborativeFiltering
+from collaborative_filtering.lsh.ItemLshCollaborativeFiltering import ItemLshCollaborativeFiltering
+from collaborative_filtering.lsh.UserLshCollaborativeFiltering import UserLshCollaborativeFiltering
 from collaborative_filtering.naive.ItemNaiveCollaborativeFiltering import ItemNaiveCollaborativeFiltering
 from collaborative_filtering.naive.UserNaiveCollaborativeFiltering import UserNaiveCollaborativeFiltering
-from commons.FormulaFactory import FormulaFactory
+from commons.FormulaFactory import FormulaFactory, SimilarityMeasureType
 from commons.RatingPredictor import RatingPredictor
 from data_handling.CsvProvider import CsvProvider
 from data_handling.DataLoader import DataLoader
@@ -57,11 +59,6 @@ print(data_loader.get_ratings_matrix())
 
 # Create the user similarity matrix matrix if not already created
 
-'''
-#commented this out since it slows down my stuff for UV decomposers
-
-
-
 sym_matrix_results = disk_persistor.perist_computation([
     (lambda: RowPearsonSimilarityMatrix(data_loader.get_ratings_matrix()), 'evaluation_global_pearson_similarity_matrix'),
     (lambda: RowPearsonSimilarityMatrix(data_loader.get_ratings_matrix().T), 'evaluation_global_pearson_similarity_matrix_movie')
@@ -69,7 +66,7 @@ sym_matrix_results = disk_persistor.perist_computation([
 
 global_pearson_similarity_matrix_user = sym_matrix_results[0]
 global_pearson_similarity_matrix_movie = sym_matrix_results[1]
-'''
+
 
 #Generate formular factory and True RMSE score
 formula_factory = FormulaFactory()
@@ -293,11 +290,197 @@ biased3_UVdecomposer = {
 '''
 
 
+## Collaborative Filtering different parameters comparison
+
+naive_collaborative_filtering = lambda w, k: {
+    'name': 'Naive Collaborative Filtering',
+    'description': 'Item-Item weight: {}, User-User weight: {}, k-neighbors: {}'.format(w, 1 - w, k),
+    'weights': [w, 1 - w],
+    'force_update': True,
+    'predictor': RatingPredictor(
+                        data_loader=data_loader,
+                        disk_persistor=disk_persistor,
+                        persistence_id='evaluation_predictor_naive',
+                        prediction_strategies=[
+                                ItemNaiveCollaborativeFiltering(
+                                    k_neighbors=k,
+                                    sim_matrix=global_pearson_similarity_matrix_movie
+                                ),
+                                UserNaiveCollaborativeFiltering(
+                                    k_neighbors=k,
+                                    sim_matrix=global_pearson_similarity_matrix_user
+                                 )
+                        ]
+                    )
+
+}
+
+collaborative_filtering_with_global_biases = lambda w, k: {
+    'name': 'Global Biases Collaborative Filtering',
+    'description': 'Item-Item weight: {}, User-User weight: {}, k-neighbors: {}'.format(w, 1 - w, k),
+    'weights': [w, 1 - w],
+    'force_update': True,
+    'predictor': RatingPredictor(
+                        data_loader=data_loader,
+                        disk_persistor=disk_persistor,
+                        persistence_id='evaluation_predictor_naive',
+                        prediction_strategies=[
+                                ItemGlobalBaselineCollaborativeFiltering(
+                                    k_neighbors=k,
+                                    sim_matrix=global_pearson_similarity_matrix_movie
+                                ),
+                                UserGlobalBaselineCollaborativeFiltering(
+                                    k_neighbors=k,
+                                    sim_matrix=global_pearson_similarity_matrix_user
+                                 )
+                        ]
+                    )
+
+}
+
+clustering_based_collaborative_filtering = lambda dim, k, sample_size: {
+    'name': 'Clustring Based Collaborative Filtering',
+    'description': 'Row and Column Dim Ratio: {}, k-neighbors: {}, sample-size: {}'.format(dim, k, sample_size),
+    'weights': [1.0],
+    'force_update': True,
+    'predictor': RatingPredictor(
+                    data_loader=data_loader,
+                    disk_persistor=disk_persistor,
+                    persistence_id='predictor_clustering',
+                    prediction_strategies=[
+                        ClusterCollaborativeFiltering(
+                            row_similarity_matrix=global_pearson_similarity_matrix_user,
+                            col_similarity_matrix=global_pearson_similarity_matrix_movie,
+                            new_dim_ratio=(dim, dim),
+                            k_neighbors=k,
+                            randomized=True,
+                            randomized_num_extractions=sample_size,
+                            random_seed=3
+                        )
+                    ]
+                )
+
+}
+
+lsh_based_collaborative_filtering = lambda w, k, sign_len, max_query_distance, distance_measure: {
+    'name': 'Cosine LSH based Collaborative Filtering',
+    'description': 'Item-Item weight: {}, User-User weight: {}, k-neighbors: {}, Signiture Length: {}, Max Query Distance: {}, Distance Measure: {}'.format(w, 1 - w, k, sign_len, max_query_distance, distance_measure),
+    'weights': [w, 1 - w],
+    'force_update': True,
+    'predictor': RatingPredictor(
+                    data_loader=data_loader,
+                    disk_persistor=disk_persistor,
+                    persistence_id='predictor_lsh_based',
+                    prediction_strategies=[
+                        ItemLshCollaborativeFiltering(
+                            k_neighbors=k,
+                            signiture_length=sign_len,
+                            max_query_distance=max_query_distance,
+                            formula_factory=formula_factory,
+                            random_seed=3,
+                            cosine_similarity_type=SimilarityMeasureType.COSINE_SIMILARITY if distance_measure == 'cosine' else SimilarityMeasureType.MEANLESS_COSINE_SIMILARITY
+                        ),
+                        UserLshCollaborativeFiltering(
+                            k_neighbors=k,
+                            signiture_length=sign_len,
+                            max_query_distance=max_query_distance,
+                            formula_factory=formula_factory,
+                            random_seed=3,
+                            cosine_similarity_type=SimilarityMeasureType.COSINE_SIMILARITY if distance_measure == 'cosine' else SimilarityMeasureType.MEANLESS_COSINE_SIMILARITY
+                        )
+                    ]
+    )
+}
+
+
 
 
 # Generate reports for evaluations
 
 #generate_prediction_report('test_report', [evaluation_naive, evaluation_clustering, global_biases, regularized_UVdecomposer, biased_UVdecomposer], expected_ratings_dict)
-generate_prediction_report('graph_report', [ simple_uv, regularized_uv, biased_uv ], expected_ratings_dict)
+#generate_prediction_report('graph_report', [ simple_uv, regularized_uv, biased_uv ], expected_ratings_dict)
+
+## 20% test size, 40% data
+# reports for naive collaborative clustering
+# generate_prediction_report('naive_col_fil_weight_optimization',
+#                            [
+#                                naive_collaborative_filtering(0.3, 30),
+#                                naive_collaborative_filtering(0.5, 30),
+#                                naive_collaborative_filtering(0.7, 30)
+#                            ],
+#                            expected_ratings_dict) --> best weight: 0.5, RMSE: 0.9288482249041781
+#
+# generate_prediction_report('naive_col_fil_neighbors_optimization',
+#                            [
+#                                naive_collaborative_filtering(0.5, 5),
+#                                naive_collaborative_filtering(0.5, 15),
+#                                naive_collaborative_filtering(0.5, 30),
+#                                naive_collaborative_filtering(0.5, 50)
+#                            ],
+#                            expected_ratings_dict)
+
+# reports for global-biased collaborative clustering
 
 
+# generate_prediction_report('global_bias_col_fil_weight_optimization',
+#                            [
+#                                 collaborative_filtering_with_global_biases(0.3, 30),
+#                                 collaborative_filtering_with_global_biases(0.5, 30),
+#                                 collaborative_filtering_with_global_biases(0.7, 30)
+#                            ],
+#                            expected_ratings_dict) --> best weight: 0.7, RMSE: 0.9038670758283112
+
+# generate_prediction_report('global_bias_col_fil_neighbors_optimization',
+#                            [
+#                                collaborative_filtering_with_global_biases(0.7, 5),
+#                                collaborative_filtering_with_global_biases(0.7, 15),
+#                                collaborative_filtering_with_global_biases(0.7, 30),
+#                                collaborative_filtering_with_global_biases(0.7, 50)
+#                            ],
+#                            expected_ratings_dict)
+
+# reports for clustering based collaborative clustering
+
+# generate_prediction_report('cluster_col_fil_mat_dim_optimization',
+#                            [
+#                                clustering_based_collaborative_filtering(0.3, 30, 100),
+#                                clustering_based_collaborative_filtering(0.5, 30, 100),
+#                                clustering_based_collaborative_filtering(0.7, 30, 100)
+#                            ],
+#                            expected_ratings_dict) -> best dim: 0.7, RMSE: 1.0818906585615655
+
+# generate_prediction_report('cluster_col_fil_neighbors_optimization',
+#                            [
+#                                clustering_based_collaborative_filtering(0.7, 5, 100),
+#                                clustering_based_collaborative_filtering(0.7, 15, 100),
+#                                clustering_based_collaborative_filtering(0.7, 30, 100),
+#                                clustering_based_collaborative_filtering(0.7, 50, 100)
+#                            ],
+#                            expected_ratings_dict)
+#
+# generate_prediction_report('cluster_col_fil_sample_optimization',
+#                            [
+#                                clustering_based_collaborative_filtering(0.7, 50, 10),
+#                                clustering_based_collaborative_filtering(0.7, 50, 100),
+#                                clustering_based_collaborative_filtering(0.7, 50, 1000),
+#                                clustering_based_collaborative_filtering(0.7, 50, 4000)
+#                            ],
+#                            expected_ratings_dict)
+
+# reports for LSH
+
+generate_prediction_report('lsh_col_fil_optimize_sign_len',
+                           [
+                               lsh_based_collaborative_filtering(0.7, 30, 8, 5000, 'cosine'),
+                               lsh_based_collaborative_filtering(0.7, 30, 16, 5000, 'cosine'),
+                               lsh_based_collaborative_filtering(0.7, 30, 32, 5000, 'cosine'),
+                           ],
+                           expected_ratings_dict)
+
+
+# generate_prediction_report('lsh_col_fil_optimize_dist_measure',
+#                            [
+#                                lsh_based_collaborative_filtering(0.7, 30, ?, 200, 'cosine'),
+#                                lsh_based_collaborative_filtering(0.7, 30, ?, 200, 'pearson'),
+#                            ],
+#                            expected_ratings_dict)

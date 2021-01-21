@@ -104,7 +104,7 @@ We cannot test all possible combinations, but we can try a few
 to compare the influence of each parameter:
 
 Naive and GlobalBaseline:
-(0.3-0.7, 30), (0.5, 0.5, 30), (0.7-0.3, 30)
+(0.3-0.7, 30), (0.5 - 0.5, 30), (0.7-0.3, 30)
 (best, 5), (best, 15), (best, 30), (best, 50)
 
 LSH:
