@@ -57,11 +57,11 @@ print(data_loader.get_ratings_matrix())
 
 # Create the user similarity matrix matrix if not already created
 
-'''
+
 #commented this out since it slows down my stuff for UV decomposers
 
 
-
+'''
 sym_matrix_results = disk_persistor.perist_computation([
     (lambda: RowPearsonSimilarityMatrix(data_loader.get_ratings_matrix()), 'evaluation_global_pearson_similarity_matrix'),
     (lambda: RowPearsonSimilarityMatrix(data_loader.get_ratings_matrix().T), 'evaluation_global_pearson_similarity_matrix_movie')
@@ -181,57 +181,11 @@ regularized_UVdecomposer = {
 '''
 
 
-simple_uv = {
-    'name': ' biased one Regularized UV Decomposer',
-    'description': 'Simple UV, D=7, mu = 0.003,',
-    'weights': [1.0],
-    'force_update': True,
-    'predictor': RatingPredictor(
-                        data_loader=data_loader,
-                        disk_persistor=disk_persistor,
-                        persistence_id='evaluation_uv_regularized',
-                        prediction_strategies=[
-                            SimpleUVDecomposer(
-                                d = 7,
-                                iterations=55,
-                                mu=0.003,
-                                formula_factory=formula_factory,
-                                scorer_type=scoring_measure_rmse
-                            )
-                        ]
-                    )
-
-}
 
 
-regularized_uv = {
-    'name': 'Regularized UV Decomposer',
-    'description': 'Regularized, D=7, mu = 0.003, delta1= 0.08, delta2 = 0.10',
-    'weights': [1.0],
-    'force_update': True,
-    'predictor': RatingPredictor(
-                        data_loader=data_loader,
-                        disk_persistor=disk_persistor,
-                        persistence_id='evaluation_uv_regularized',
-                        prediction_strategies=[
-                                RegularizedUvDecomposer(
-                                    iterations=55,
-                                    d=7,
-                                    mu= 0.003,
-                                    delta1=0.08,
-                                    delta2=0.10,
-                                    formula_factory = formula_factory,
-                                    scorer_type=scoring_measure_rmse
-                                )
-                            ]
-                    )
-
-}
-
-
-biased_uv = {
-    'name': 'Biased UV Decomposer',
-    'description': 'Biased 1, D=7, mu = 0.003, delta1= 0.08, delta2 = 0.10, bias1 = 0.07, bias2 = 0.09 ',
+biased3_uv = {
+    'name': 'Biased3 UV Decomposer',
+    'description': 'Biased 1, D=5, mu = 0.003, delta1= 0.08, delta2 = 0.10, bias1 = 0.07, bias2 = 0.09 ',
     'weights': [1.0],
     'force_update': True,
     'predictor': RatingPredictor(
@@ -255,12 +209,12 @@ biased_uv = {
 
 }
 
-'''
 
+'''
 biased3_UVdecomposer = {
     'name': 'Only Regularized UV Decomposer',
     'description': 'biased 3, D=50, mu = 0.005, delta1= 1.15, delta2 = 1.08',
-    'weights': [0.40, 0.10, 0.5],
+    'weights': [0.5, 0.5],
     'force_update': True,
     'predictor': RatingPredictor(
                         data_loader=data_loader,
@@ -270,10 +224,6 @@ biased3_UVdecomposer = {
                                 ItemGlobalBaselineCollaborativeFiltering(
                                     k_neighbors=30,
                                     sim_matrix=global_pearson_similarity_matrix_movie
-                                ),
-                                UserGlobalBaselineCollaborativeFiltering(
-                                    k_neighbors=30,
-                                    sim_matrix=global_pearson_similarity_matrix_user
                                 ),
                                 BiasUvDecomposer(
                                     iterations=55,
@@ -295,9 +245,10 @@ biased3_UVdecomposer = {
 
 
 
+
 # Generate reports for evaluations
 
 #generate_prediction_report('test_report', [evaluation_naive, evaluation_clustering, global_biases, regularized_UVdecomposer, biased_UVdecomposer], expected_ratings_dict)
-generate_prediction_report('graph_report', [ simple_uv, regularized_uv, biased_uv ], expected_ratings_dict)
+generate_prediction_report('show_descent', [ biased3_uv  ], expected_ratings_dict)
 
 
