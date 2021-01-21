@@ -93,6 +93,8 @@ class UvDecomposer(PredictionStrategy):
         Perform precomputations
         """
 
+        self.expected = expected_ratings
+
         PredictionStrategy.perform_precomputations(self)
 
         # dictionaries translating from user ids to rows and movie ids to columns
@@ -143,7 +145,7 @@ class UvDecomposer(PredictionStrategy):
 
         for user_id, movie_id in instances_to_be_predicted:
             num_prediction += 1
-            print('Progress {} / {}'.format(num_prediction, predictions_num))
+            #print('Progress {} / {}'.format(num_prediction, predictions_num))
 
             row = self.user_id_to_row[user_id]
             col = self.movie_id_to_col[movie_id]
