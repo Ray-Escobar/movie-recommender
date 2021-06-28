@@ -1,3 +1,6 @@
 # Netflix Recommendation System
 
-This is our repository for the TU Delft Data Mining Course.
+Movie recommender system based on:
+ 
+1. Collaborative Filtering
+2. Matrix Factorization
